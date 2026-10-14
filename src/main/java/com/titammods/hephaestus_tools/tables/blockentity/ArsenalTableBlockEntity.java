@@ -44,7 +44,7 @@ public class ArsenalTableBlockEntity extends BlockEntity implements MenuProvider
     };
     private final ItemStackHandler inputSlots = new ItemStackHandler(4) {
         @Override protected void onContentsChanged(int slot) { setChanged(); syncToClient(); }
-        @Override public int getSlotLimit(int slot) { return slot == 0 ? 99 : 1; }
+        @Override public int getSlotLimit(int slot) { return slot < 3 ? 99 : 1; }
     };
     private final ItemStackHandler outputSlot = new ItemStackHandler(1) {
         @Override protected void onContentsChanged(int slot) { setChanged(); syncToClient(); }

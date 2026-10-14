@@ -80,7 +80,11 @@ public class WorkbenchMenu extends ArsenalTableMenu {
         if (!output().isEmpty()) return false;
         if (!blockEntity.getUpgradeSlot().getStackInSlot(0).isEmpty()) return true;
         ItemStack staged = blockEntity.getInputSlots().getStackInSlot(0);
-        return !staged.isEmpty() && !(staged.getItem() instanceof ToolPartItem);
+        if (!staged.isEmpty() && !(staged.getItem() instanceof ToolPartItem)) return true;
+        for (int i = 1; i <= EXTRA_SLOTS; i++)
+            if (!blockEntity.getInputSlots().getStackInSlot(i).isEmpty()
+                    && !(blockEntity.getInputSlots().getStackInSlot(i).getItem() instanceof ToolPartItem)) return true;
+        return false;
     }
 
     @Override
@@ -90,19 +94,40 @@ public class WorkbenchMenu extends ArsenalTableMenu {
 
     @Override
     protected boolean inputActive(int part) {
-        if (activeTab == 1) return part == 0;
+        if (activeTab == 1) return part <= EXTRA_SLOTS;
         return super.inputActive(part);
     }
 
     @Override
     protected boolean inputAccepts(int part, ItemStack stack) {
-        return activeTab == 1 ? acceptsStaged(stack) : accepts(part, stack);
+        if (activeTab == 1) return part == 0 ? acceptsStaged(stack) : acceptsExtra(stack);
+        return accepts(part, stack);
     }
 
     @Override
     protected int inputLimit(int part) {
         if (activeTab == 0 && part == 0 && isRepair()) return 64;
-        return activeTab == 1 && part == 0 ? 99 : 1;
+        if (activeTab == 1) return part == 0 ? 99 : 64;
+        return 1;
+    }
+
+    public static final int EXTRA_SLOTS = 2;
+
+    public List<ItemStack> pendingExtras() {
+        ItemStack tool = tool();
+        List<ItemStack> out = new ArrayList<>();
+        if (!ToolStack.isInitialized(tool)) return out;
+        for (var up : ToolUpgrades.availableFor(tool.getItem())) {
+            int lvl = ToolUpgrades.currentLevel(tool, up);
+            if (lvl < up.maxLevel()) out.addAll(up.extraCosts(lvl + 1));
+        }
+        return out;
+    }
+
+    public boolean acceptsExtra(ItemStack stack) {
+        if (stack.isEmpty() || stack.getItem() instanceof ToolPartItem) return false;
+        for (ItemStack extra : pendingExtras()) if (extra.getItem() == stack.getItem()) return true;
+        return false;
     }
 
     public static int repairPerUnit(ItemStack tool) {
@@ -131,7 +156,7 @@ public class WorkbenchMenu extends ArsenalTableMenu {
 
     @Override
     protected int quickMoveTabEnd() {
-        return activeTab == 1 ? 2 : 1;
+        return activeTab == 1 ? 2 + EXTRA_SLOTS : 1;
     }
 
     public boolean isInspecting() { return inspecting; }
@@ -311,7 +336,6 @@ public class WorkbenchMenu extends ArsenalTableMenu {
         ItemStack bench = input(0);
         if (!bench.isEmpty() && bench.getItem() != up.costItem()) { returnSlot(player, 1); bench = input(0); }
         int need = Math.min(99, up.costFor(lvl + 1)) - (bench.isEmpty() ? 0 : bench.getCount());
-        if (need <= 0) return true;
         var inv = player.getInventory();
         int taken = 0;
         for (int s = 0; s < inv.getContainerSize() && taken < need; s++) {
@@ -319,13 +343,43 @@ public class WorkbenchMenu extends ArsenalTableMenu {
             if (st.isEmpty() || st.getItem() != up.costItem()) continue;
             taken += st.split(Math.min(need - taken, st.getCount())).getCount();
         }
-        if (taken == 0) return false;
-        ItemStack put = new ItemStack(up.costItem(), (bench.isEmpty() ? 0 : bench.getCount()) + taken);
-        blockEntity.getInputSlots().setStackInSlot(0, put);
+        if (taken > 0) {
+            ItemStack put = new ItemStack(up.costItem(), (bench.isEmpty() ? 0 : bench.getCount()) + taken);
+            blockEntity.getInputSlots().setStackInSlot(0, put);
+        }
+        boolean extras = fillExtras(player, up.extraCosts(lvl + 1));
+        if (taken == 0 && !extras) return false;
         inv.setChanged();
         blockEntity.setChanged();
         broadcastChanges();
         return true;
+    }
+
+    private boolean fillExtras(Player player, List<ItemStack> extras) {
+        var inv = player.getInventory();
+        boolean changed = false;
+        for (ItemStack extra : extras) {
+            int slot = -1;
+            for (int i = 1; i <= EXTRA_SLOTS && slot < 0; i++)
+                if (input(i).is(extra.getItem())) slot = i;
+            for (int i = 1; i <= EXTRA_SLOTS && slot < 0; i++)
+                if (input(i).isEmpty()) slot = i;
+            if (slot < 0) continue;
+            ItemStack bench = input(slot);
+            int have = bench.isEmpty() ? 0 : bench.getCount();
+            int need = Math.min(64, extra.getCount()) - have;
+            if (need <= 0) continue;
+            int taken = 0;
+            for (int s = 0; s < inv.getContainerSize() && taken < need; s++) {
+                ItemStack st = inv.getItem(s);
+                if (st.isEmpty() || st.getItem() != extra.getItem()) continue;
+                taken += st.split(Math.min(need - taken, st.getCount())).getCount();
+            }
+            if (taken == 0) continue;
+            blockEntity.getInputSlots().setStackInSlot(slot, new ItemStack(extra.getItem(), have + taken));
+            changed = true;
+        }
+        return changed;
     }
 
     private void fillParts(Player player) {

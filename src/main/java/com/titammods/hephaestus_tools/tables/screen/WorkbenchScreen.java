@@ -925,8 +925,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         y = wrapped(g, entryDescription(sel), x, y + 15 + HG, w, .56f, INK2, 2) + 3;
         if (!max) {
             y = inkStatPreview(g, up, level, x, y, w, 3, hoverBtn && canApply) + 3;
-            costLine(g, up, level, x, y, w);
-            y += 13;
+            y = costLine(g, up, level, x, y, w);
             if (level == 0 && installed.size() >= unlocked) text(g, tr("no_free_slot"), x, y, w, .54f, INK_RED);
         } else {
             centered(g, tr("max_level"), x + w / 2, y + 4, w, .8f, INK_ORANGE);
@@ -957,8 +956,8 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         }
     }
 
-    private void costLine(GuiGraphicsExtractor g, ToolUpgrade up, int level, int x, int y, int w) {
-        int owned = ToolUpgrades.stagedCount(minecraft.player, up.costItem());
+    private int costLine(GuiGraphicsExtractor g, ToolUpgrade up, int level, int x, int y, int w) {
+        int owned = ToolUpgrades.benchCount(minecraft.player, up.costItem());
         int need = up.costFor(level + 1);
         boolean ok = owned >= need;
         ItemStack cost = new ItemStack(up.costItem());
@@ -966,6 +965,16 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         text(g, Component.literal(need + " x ").append(cost.getHoverName()), x + 13, y + 1, w - 13 - 28, .6f, INK);
         textRight(g, Component.literal(String.valueOf(owned)), x + w, y + 1, 28, .62f, ok ? INK_GREEN : INK_RED);
         tip(x, y - 1, w, 11, cost.getHoverName(), tr("drop_to_upgrade"));
+        y += 13;
+        for (ItemStack extra : up.extraCosts(level + 1)) {
+            int have = ToolUpgrades.extraCount(minecraft.player, extra.getItem());
+            icon(g, extra, x, y);
+            text(g, Component.literal(extra.getCount() + " x ").append(extra.getHoverName()), x + 13, y + 1, w - 13 - 28, .6f, INK);
+            textRight(g, Component.literal(String.valueOf(have)), x + w, y + 1, 28, .62f, have >= extra.getCount() ? INK_GREEN : INK_RED);
+            tip(x, y - 1, w, 11, extra.getHoverName());
+            y += 13;
+        }
+        return y;
     }
 
     private void futureCosts(GuiGraphicsExtractor g, ToolUpgrade up, int level, int x, int y, int w) {
@@ -1269,10 +1278,15 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             }
             if (!any) t.body(tr("effect_special"), INK2);
         } catch (RuntimeException ignored) { }
-        int need = up.costFor(level + 1), staged = ToolUpgrades.stagedCount(minecraft.player, up.costItem());
+        int need = up.costFor(level + 1), staged = ToolUpgrades.benchCount(minecraft.player, up.costItem());
         t.gap();
         t.cost(new ItemStack(up.costItem()), Component.literal(need + " x ").append(new ItemStack(up.costItem()).getHoverName()),
                 Component.literal(staged + "/" + need), staged >= need ? INK_GREEN : INK_RED);
+        for (ItemStack extra : up.extraCosts(level + 1)) {
+            int have = ToolUpgrades.extraCount(minecraft.player, extra.getItem());
+            t.cost(extra, Component.literal(extra.getCount() + " x ").append(extra.getHoverName()),
+                    Component.literal(have + "/" + extra.getCount()), have >= extra.getCount() ? INK_GREEN : INK_RED);
+        }
         t.gap();
         t.hint(tr("drop_to_upgrade"), INK_ORANGE);
         return t;
@@ -1515,7 +1529,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
 
     private void syncCinematicScene() {
         List<ItemStack> inputs = new ArrayList<>(4);
-        for (int i = 0; i < 4; i++) inputs.add(menu.getActiveTab() == 0 || (menu.getActiveTab() == 1 && i == 0) ? menu.input(i) : ItemStack.EMPTY);
+        for (int i = 0; i < 4; i++) inputs.add(menu.getActiveTab() == 0 || (menu.getActiveTab() == 1 && i <= WorkbenchMenu.EXTRA_SLOTS) ? menu.input(i) : ItemStack.EMPTY);
         ItemStack scenePreview = menu.getActiveTab() == 0 ? menu.preview() : ItemStack.EMPTY;
         ItemStack morph = morphPreview();
         boolean morphOn = !morph.isEmpty();
@@ -1835,6 +1849,11 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         int owned = ToolUpgrades.countIn(minecraft.player, up.costItem()), need = up.costFor(level + 1);
         t.add(Component.literal(need + " x ").append(new ItemStack(up.costItem()).getHoverName()).append("  (" + owned + ")")
                 .withStyle(owned >= need ? ChatFormatting.GREEN : ChatFormatting.RED));
+        for (ItemStack extra : up.extraCosts(level + 1)) {
+            int have = ToolUpgrades.extraCount(minecraft.player, extra.getItem());
+            t.add(Component.literal(extra.getCount() + " x ").append(extra.getHoverName()).append("  (" + have + ")")
+                    .withStyle(have >= extra.getCount() ? ChatFormatting.GREEN : ChatFormatting.RED));
+        }
         t.add(Component.empty());
         t.add(tr(level > 0 ? "click_upgrade" : "click_install").copy().withStyle(ChatFormatting.YELLOW));
         return t.toArray(new Component[0]);
@@ -1975,6 +1994,11 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 Component cost = tr("materials_required").copy().append(": " + up.costFor(level + 1) + " x ")
                         .append(new ItemStack(up.costItem()).getHoverName());
                 lines.addAll(font.split(cost, 180));
+                for (ItemStack extra : up.extraCosts(level + 1)) {
+                    int have = ToolUpgrades.extraCount(minecraft.player, extra.getItem());
+                    lines.addAll(font.split(Component.literal(extra.getCount() + " x ").append(extra.getHoverName()).append("  (" + have + ")")
+                            .withStyle(have >= extra.getCount() ? ChatFormatting.GREEN : ChatFormatting.RED), 180));
+                }
                 lines.addAll(font.split(tr("materials_owned").copy().append(": " + owned)
                         .withStyle(owned >= up.costFor(level + 1) ? ChatFormatting.GREEN : ChatFormatting.RED), 180));
                 if (owned < up.costFor(level + 1)) lines.addAll(font.split(
@@ -2103,9 +2127,30 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 if (up != null) { selectedEntry = Math.max(0, upgrades().indexOf(up)); ensureVisible(); }
                 return true;
             }
+            if (menu.getActiveTab() == 1 && toolReady() && dropExtra(carried)) return true;
             if (menu.getActiveTab() == 1 && toolReady() && spot != null && overTool(spot)) denied();
         }
         return false;
+    }
+
+    private boolean dropExtra(ItemStack carried) {
+        if (!menu.acceptsExtra(carried)) return false;
+        int need = 0;
+        for (ItemStack extra : menu.pendingExtras()) if (extra.getItem() == carried.getItem()) need = Math.max(need, extra.getCount());
+        int target = -1;
+        for (int i = 1; i <= WorkbenchMenu.EXTRA_SLOTS && target < 0; i++)
+            if (ItemStack.isSameItemSameComponents(menu.input(i), carried)) target = i;
+        for (int i = 1; i <= WorkbenchMenu.EXTRA_SLOTS && target < 0; i++)
+            if (menu.input(i).isEmpty()) target = i;
+        if (target < 0) { denied(); return true; }
+        Slot slot = menu.slots.get(target + 1);
+        if (!slot.mayPlace(carried)) { denied(); return true; }
+        int missing = need - menu.input(target).getCount();
+        if (missing <= 0) { denied(); return true; }
+        int put = Math.min(carried.getCount(), missing);
+        if (put >= carried.getCount()) slotClicked(slot, slot.index, 0, ContainerInput.PICKUP);
+        else for (int k = 0; k < put; k++) slotClicked(slot, slot.index, 1, ContainerInput.PICKUP);
+        return true;
     }
 
     private void releaseBench(int newSel) {
@@ -2137,9 +2182,13 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         if (lvl >= up.maxLevel()) return false;
         ItemStack bench = menu.input(0);
         int have = bench.is(up.costItem()) ? bench.getCount() : 0;
-        if (have >= Math.min(99, up.costFor(lvl + 1))) return false;
         var inv = minecraft.player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) if (inv.getItem(i).is(up.costItem())) return true;
+        if (have < Math.min(99, up.costFor(lvl + 1)))
+            for (int i = 0; i < inv.getContainerSize(); i++) if (inv.getItem(i).is(up.costItem())) return true;
+        for (ItemStack extra : up.extraCosts(lvl + 1)) {
+            if (ToolUpgrades.stagedExtraCount(minecraft.player, extra.getItem()) >= extra.getCount()) continue;
+            if (ToolUpgrades.inventoryCount(minecraft.player, extra.getItem()) > 0) return true;
+        }
         return false;
     }
 

@@ -95,7 +95,7 @@ public final class MaterialManager {
 
     @SubscribeEvent
     public static void onAddReloadListeners(AddServerReloadListenersEvent event) {
-        event.addListener(LISTENER_ID, new Loader());
+        event.addListener(LISTENER_ID, new Loader(event.getConditionContext()));
     }
 
     @SubscribeEvent
@@ -109,6 +109,12 @@ public final class MaterialManager {
     }
 
     public static final class Loader implements ResourceManagerReloadListener {
+
+        private final ICondition.IContext context;
+
+        public Loader(ICondition.IContext context) {
+            this.context = context;
+        }
 
         @Override
         public void onResourceManagerReload(ResourceManager manager) {
@@ -138,12 +144,12 @@ public final class MaterialManager {
             LOGGER.info("[HephaestusTools] Materiais carregados: {} OK, {} falhas, {} ignorados por condicao", loaded.size(), failed, skipped);
         }
 
-        private static boolean conditionsMet(JsonElement json) {
+        private boolean conditionsMet(JsonElement json) {
             if (!json.isJsonObject() || !json.getAsJsonObject().has(CONDITIONS_KEY)) return true;
             List<ICondition> conditions = ICondition.LIST_CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject().get(CONDITIONS_KEY))
                     .getOrThrow(msg -> new IllegalStateException(msg));
             for (ICondition condition : conditions) {
-                if (!condition.test(ICondition.IContext.EMPTY)) return false;
+                if (!condition.test(context)) return false;
             }
             return true;
         }

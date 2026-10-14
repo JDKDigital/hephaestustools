@@ -640,6 +640,11 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
                 Component cost = tr("materials_required").copy().append(": " + up.costFor(level + 1) + " x ")
                         .append(new ItemStack(up.costItem()).getHoverName());
                 lines.addAll(font.split(cost, 180));
+                for (ItemStack extra : up.extraCosts(level + 1)) {
+                    int have = ToolUpgrades.extraCount(minecraft.player, extra.getItem());
+                    lines.addAll(font.split(Component.literal(extra.getCount() + " x ").append(extra.getHoverName()).append("  (" + have + ")")
+                            .withStyle(have >= extra.getCount() ? ChatFormatting.GREEN : ChatFormatting.RED), 180));
+                }
                 lines.addAll(font.split(tr("materials_owned").copy().append(": " + owned)
                         .withStyle(owned >= up.costFor(level + 1) ? ChatFormatting.GREEN : ChatFormatting.RED), 180));
                 boolean creative = minecraft.player != null && minecraft.player.getAbilities().instabuild;

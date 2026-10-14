@@ -75,11 +75,11 @@ public final class ToolUpgrades {
         REGISTRY.add(new ToolUpgrade(ModifierEffects.REINFORCED, "upgrade.hephaestus_tools.reinforced",
                 EnumSet.of(ToolRole.MINING, ToolRole.COMBAT, ToolRole.HARVEST), 5, Items.OBSIDIAN, 6, icon("upgrades/reach.png")));
         REGISTRY.add(new ToolUpgrade(ModifierEffects.HASTE, "upgrade.hephaestus_tools.haste",
-                EnumSet.of(ToolRole.MINING), 5, Items.REDSTONE_BLOCK, 4, icon("upgrades/attack_speed.png")));
+                EnumSet.of(ToolRole.MINING), 10, Items.REDSTONE_BLOCK, 4, icon("upgrades/attack_speed.png")));
         REGISTRY.add(new ToolUpgrade(ModifierEffects.FORTUNE, "upgrade.hephaestus_tools.fortune",
-                EnumSet.of(ToolRole.MINING, ToolRole.HARVEST), 3, Items.DIAMOND, 3, icon("upgrades/critical.png")));
+                EnumSet.of(ToolRole.MINING, ToolRole.HARVEST), 10, Items.DIAMOND, 3, icon("upgrades/critical.png")));
         REGISTRY.add(new ToolUpgrade(ModifierEffects.SHARPNESS, "upgrade.hephaestus_tools.sharpness",
-                EnumSet.of(ToolRole.COMBAT), 5, Items.DIAMOND, 2, icon("upgrades/damage.png")));
+                EnumSet.of(ToolRole.COMBAT), 10, Items.DIAMOND, 2, icon("upgrades/damage.png")));
         REGISTRY.add(new ToolUpgrade(ModifierEffects.LOOTING, "upgrade.hephaestus_tools.looting",
                 EnumSet.of(ToolRole.COMBAT), 3, Items.EMERALD, 4, icon("upgrades/critical.png")));
         REGISTRY.add(new ToolUpgrade(ModifierEffects.SILK_TOUCH, "modifier.hephaestus_tools.silk_touch",
@@ -154,6 +154,41 @@ public final class ToolUpgrades {
         return n;
     }
 
+    public static int inventoryCount(Player p, Item item) {
+        if (p == null) return 0;
+        int n = 0;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.getItem() == item) n += s.getCount();
+        }
+        return n;
+    }
+
+    public static int benchCount(Player p, Item item) {
+        return stagedCount(p, item) + inventoryCount(p, item);
+    }
+
+    public static int stagedExtraCount(Player p, Item item) {
+        if (p == null || !(p.containerMenu instanceof WorkbenchMenu m)) return 0;
+        int n = 0;
+        for (int i = 1; i <= WorkbenchMenu.EXTRA_SLOTS; i++) {
+            ItemStack s = m.input(i);
+            if (!s.isEmpty() && s.getItem() == item) n += s.getCount();
+        }
+        return n;
+    }
+
+    public static int extraCount(Player p, Item item) {
+        return stagedExtraCount(p, item) + inventoryCount(p, item);
+    }
+
+    public static boolean hasExtras(Player p, ToolUpgrade up, int targetLevel) {
+        for (ItemStack extra : up.extraCosts(targetLevel))
+            if (extraCount(p, extra.getItem()) < extra.getCount()) return false;
+        return true;
+    }
+
     public static int stagedCount(Player p, Item item) {
         if (p != null && p.containerMenu instanceof WorkbenchMenu m) {
             ItemStack staged = m.input(0);
@@ -179,14 +214,17 @@ public final class ToolUpgrades {
         if (lvl == 0 && usedSlots(tool) >= unlockedSlots(tool)) return false;
         boolean bench = p.containerMenu instanceof WorkbenchMenu;
         if (!bench && p.getAbilities().instabuild) return true;
-        int have = loose || !bench ? countIn(p, up.costItem()) : stagedCount(p, up.costItem());
-        return have >= up.costFor(lvl + 1);
+        int have = loose || !bench ? countIn(p, up.costItem()) : benchCount(p, up.costItem());
+        return have >= up.costFor(lvl + 1) && hasExtras(p, up, lvl + 1);
     }
 
     public static boolean apply(Player p, ItemStack tool, ToolUpgrade up) {
         if (!canApply(p, tool, up)) return false;
         int next = currentLevel(tool, up) + 1;
-        if (p.containerMenu instanceof WorkbenchMenu || !p.getAbilities().instabuild) consume(p, up.costItem(), up.costFor(next));
+        if (p.containerMenu instanceof WorkbenchMenu || !p.getAbilities().instabuild) {
+            consume(p, up.costItem(), up.costFor(next));
+            for (ItemStack extra : up.extraCosts(next)) consumeExtra(p, extra.getItem(), extra.getCount());
+        }
         ToolStack.addModifier(tool, new ToolConstructionData.ModifierEntry(up.id(), next));
         ToolStack.recalculate(tool);
         return true;
@@ -196,12 +234,33 @@ public final class ToolUpgrades {
         if (p.containerMenu instanceof WorkbenchMenu m) {
             ItemStack staged = m.input(0);
             if (!staged.isEmpty() && staged.getItem() == item) {
+                int used = Math.min(amount, staged.getCount());
                 ItemStack rest = staged.copy();
-                rest.shrink(Math.min(amount, staged.getCount()));
+                rest.shrink(used);
                 m.getBlockEntity().getInputSlots().setStackInSlot(0, rest);
+                amount -= used;
             }
-            return;
         }
+        takeFromInventory(p, item, amount);
+    }
+
+    private static void consumeExtra(Player p, Item item, int amount) {
+        if (p.containerMenu instanceof WorkbenchMenu m) {
+            for (int i = 1; i <= WorkbenchMenu.EXTRA_SLOTS && amount > 0; i++) {
+                ItemStack staged = m.input(i);
+                if (staged.isEmpty() || staged.getItem() != item) continue;
+                int used = Math.min(amount, staged.getCount());
+                ItemStack rest = staged.copy();
+                rest.shrink(used);
+                m.getBlockEntity().getInputSlots().setStackInSlot(i, rest);
+                amount -= used;
+            }
+        }
+        takeFromInventory(p, item, amount);
+    }
+
+    private static void takeFromInventory(Player p, Item item, int amount) {
+        if (amount <= 0) return;
         var inv = p.getInventory();
         int remaining = amount;
         for (int i = 0; i < inv.getContainerSize() && remaining > 0; i++) {

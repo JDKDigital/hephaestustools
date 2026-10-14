@@ -7,7 +7,10 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.part.ToolPartItem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -262,7 +265,9 @@ public final class WorkbenchAssembly {
         mc.level.playLocalSound(p.x, p.y, p.z, (attach ? ModSounds.WB_PART_SNAP : ModSounds.WB_PART_UNSNAP).get(), SoundSource.BLOCKS, 0.8f,
                 0.95f + mc.level.getRandom().nextFloat() * 0.1f, false);
         if (!attach) return;
-        ItemParticleOption bits = new ItemParticleOption(ParticleTypes.ITEM, net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(part));
+        ParticleOptions bits = hasParticleSprite(mc, part)
+                ? new ItemParticleOption(ParticleTypes.ITEM, net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(part))
+                : ParticleTypes.CRIT;
         for (int i = 0; i < 10; i++) {
             double a = mc.level.getRandom().nextDouble() * Math.PI * 2.0;
             double s = 0.03 + mc.level.getRandom().nextDouble() * 0.05;
@@ -289,6 +294,13 @@ public final class WorkbenchAssembly {
         if (has(mat, "bone")) return KIND_BONE;
         if (has(mat, "stone", "flint", "granite", "andesite", "diorite", "deepslate", "obsidian", "basalt", "blackstone", "cobble")) return KIND_STONE;
         return KIND_METAL;
+    }
+
+    private static boolean hasParticleSprite(Minecraft mc, ItemStack stack) {
+        if (stack.isEmpty() || mc.level == null) return false;
+        ItemStackRenderState state = new ItemStackRenderState();
+        mc.getItemModelResolver().updateForTopItem(state, stack, ItemDisplayContext.GROUND, mc.level, null, 0);
+        return state.pickParticleMaterial(mc.level.getRandom()) != null;
     }
 
     private static void landFx(int i, ItemStack part) {
