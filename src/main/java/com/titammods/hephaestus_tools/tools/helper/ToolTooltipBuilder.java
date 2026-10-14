@@ -125,44 +125,56 @@ public final class ToolTooltipBuilder {
             Material material = mm.getMaterial(matId);
             int color = (material != null) ? (material.color() & 0xFFFFFF) : 0xFFFFFF;
 
-            Component name = part.withMaterial(matId).getHoverName().copy()
+            Component name = new ItemStack(partItem).getHoverName().copy()
+                    .append(" (")
+                    .append(Component.translatable("material.hephaestus_tools." + matId.id().getPath()))
+                    .append(")")
                     .withStyle(ChatFormatting.UNDERLINE)
                     .withStyle(s -> s.withColor(color));
             out.add(name);
 
-            MaterialStats st = mm.getStatsForSlot(matId, part.getPartSlot());
-            if (st != null) {
-                switch (part.getPartSlot()) {
-                    case 0 -> {
-                        out.add(statLine("durability", num(st.durability()), C_DURABILITY));
-                        out.add(statLine("attack_damage", num(st.attackDamage()), C_ATTACK_DAMAGE));
-                        out.add(statLine("mining_speed", num(st.miningSpeed()), C_MINING_SPEED));
-                        out.add(prefixLine("harvest_tier", tierName(st.tier())));
-                    }
-                    case 1 -> {
-                        ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 1);
-                        out.add(statLine("durability",
-                                plus(sup.durability()).append(Component.literal(" "))
-                                        .append(pct(st.durabilityMult())), C_DURABILITY));
-                        out.add(statLine("mining_speed",
-                                plus(sup.miningSpeed()).append(Component.literal(" "))
-                                        .append(pct(st.speedMult())), C_MINING_SPEED));
-                        out.add(statLine("attack_damage",
-                                plus(sup.attackDamage()).append(Component.literal(" "))
-                                        .append(pct(st.damageMult())), C_ATTACK_DAMAGE));
-                        out.add(statLine("attack_speed", pct(st.attackSpeedMult()), C_ATTACK_SPEED));
-                        out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
-                    }
-                    default -> {
-                        ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 2);
-                        out.add(statLine("durability", plus(sup.durability()), C_DURABILITY));
-                        out.add(statLine("mining_speed", plus(sup.miningSpeed()), C_MINING_SPEED));
-                        out.add(statLine("attack_damage", plus(sup.attackDamage()), C_ATTACK_DAMAGE));
-                        out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
-                    }
-                }
-            }
+            out.addAll(partStats(matId, part.getPartSlot()));
             if (i != count - 1) out.add(Component.empty());
+        }
+        return out;
+    }
+
+    public static Component holdShift() {
+        return HOLD_SHIFT;
+    }
+
+    public static List<Component> partStats(MaterialId matId, int slot) {
+        List<Component> out = new ArrayList<>();
+        MaterialStats st = MaterialManager.getInstance().getStatsForSlot(matId, slot);
+        if (st == null) return out;
+        switch (slot) {
+            case 0 -> {
+                out.add(statLine("durability", num(st.durability()), C_DURABILITY));
+                out.add(statLine("attack_damage", num(st.attackDamage()), C_ATTACK_DAMAGE));
+                out.add(statLine("mining_speed", num(st.miningSpeed()), C_MINING_SPEED));
+                out.add(prefixLine("harvest_tier", tierName(st.tier())));
+            }
+            case 1 -> {
+                ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 1);
+                out.add(statLine("durability",
+                        plus(sup.durability()).append(Component.literal(" "))
+                                .append(pct(st.durabilityMult())), C_DURABILITY));
+                out.add(statLine("mining_speed",
+                        plus(sup.miningSpeed()).append(Component.literal(" "))
+                                .append(pct(st.speedMult())), C_MINING_SPEED));
+                out.add(statLine("attack_damage",
+                        plus(sup.attackDamage()).append(Component.literal(" "))
+                                .append(pct(st.damageMult())), C_ATTACK_DAMAGE));
+                out.add(statLine("attack_speed", pct(st.attackSpeedMult()), C_ATTACK_SPEED));
+                out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
+            }
+            default -> {
+                ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 2);
+                out.add(statLine("durability", plus(sup.durability()), C_DURABILITY));
+                out.add(statLine("mining_speed", plus(sup.miningSpeed()), C_MINING_SPEED));
+                out.add(statLine("attack_damage", plus(sup.attackDamage()), C_ATTACK_DAMAGE));
+                out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
+            }
         }
         return out;
     }

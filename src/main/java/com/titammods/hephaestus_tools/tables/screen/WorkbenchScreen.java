@@ -774,9 +774,8 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             g.item(partStack, x, y + 1);
             Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
             text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, .64f, INK);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, i);
+            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
             var trait = MaterialTrait.byId(stats.traitId());
-            if (trait.isEmpty() && i == 0) trait = MaterialTrait.byId(MaterialManager.getInstance().getStatsForSlot(mat, 0).traitId());
             Component tn = null, td = null;
             if (trait.isPresent()) {
                 tn = Component.translatable("trait.hephaestus_tools." + trait.get().id());

@@ -4,7 +4,9 @@ import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.materials.MaterialStats;
 import com.titammods.hephaestus_tools.registry.ModComponents;
-import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.materials.Material;
+import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -12,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ToolPartItem extends Item {
@@ -49,63 +51,33 @@ public class ToolPartItem extends Item {
             return;
         }
 
+        Material material = MaterialManager.getInstance().getMaterial(mat);
+        int color = material != null ? material.color() & 0xFFFFFF : 0xFFFFFF;
         tooltip.accept(Component.translatable("tooltip.hephaestus_tools.material",
-                        Component.translatable("material.hephaestus_tools." + mat.id().getPath()))
+                        Component.translatable("material.hephaestus_tools." + mat.id().getPath())
+                                .withStyle(s -> s.withColor(color)))
                 .withStyle(ChatFormatting.GRAY));
 
-        MaterialStats stats = MaterialManager.getInstance().getStatsForSlot(mat, partSlot);
-        if (stats == null) return;
+        boolean shift = flag.hasShiftDown();
+        MaterialStats head = MaterialManager.getInstance().getStatsForSlot(mat, 0);
+        Optional<MaterialTrait> trait = head != null && head.hasTrait()
+                ? MaterialTrait.byId(head.traitId()) : Optional.empty();
+        trait.ifPresent(t -> {
+            tooltip.accept(Component.translatable("trait.hephaestus_tools." + t.id())
+                    .withStyle(ChatFormatting.DARK_AQUA));
+            if (shift) {
+                tooltip.accept(Component.literal("  ")
+                        .append(Component.translatable("trait.hephaestus_tools." + t.id() + ".desc")
+                                .withStyle(ChatFormatting.DARK_GRAY)));
+            }
+        });
 
-        if (partSlot == 0) {
-            tooltip.accept(stat("durability", String.valueOf(stats.durability())));
-            tooltip.accept(stat("mining_speed", fmt(stats.miningSpeed())));
-            tooltip.accept(stat("attack_damage", fmt(stats.attackDamage())));
-            tooltip.accept(stat("harvest_tier",
-                    Component.translatable("tooltip.hephaestus_tools.tier."
-                            + stats.tier().id()).getString()));
-        } else if (partSlot == 1) {
-            ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(mat, 1);
-            tooltip.accept(stat("durability", plus(sup.durability()) + " " + pct(stats.durabilityMult())));
-            tooltip.accept(stat("mining_speed", plus(sup.miningSpeed()) + " " + pct(stats.speedMult())));
-            tooltip.accept(stat("attack_damage", plus(sup.attackDamage()) + " " + pct(stats.damageMult())));
-            tooltip.accept(stat("attack_speed", pct(stats.attackSpeedMult())));
-            tooltip.accept(stat("enchantability", plus(sup.enchantability())));
+        if (shift) {
+            tooltip.accept(Component.empty());
+            ToolTooltipBuilder.partStats(mat, partSlot).forEach(tooltip);
         } else {
-            ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(mat, partSlot);
-            tooltip.accept(stat("durability", plus(sup.durability())));
-            tooltip.accept(stat("mining_speed", plus(sup.miningSpeed())));
-            tooltip.accept(stat("attack_damage", plus(sup.attackDamage())));
-            tooltip.accept(stat("enchantability", plus(sup.enchantability())));
+            tooltip.accept(Component.empty());
+            tooltip.accept(ToolTooltipBuilder.holdShift());
         }
-    }
-
-    private static Component stat(String key, String value) {
-        return Component.translatable("tooltip.hephaestus_tools." + key, value)
-                .withStyle(ChatFormatting.DARK_GRAY);
-    }
-
-    private static String fmt(float f) {
-        return String.format(Locale.ROOT, "%.2f", f);
-    }
-
-    private static String plus(float value) {
-        return (value >= 0f ? "+" : "") + String.format(Locale.ROOT, "%.2f", value);
-    }
-
-    private static String pct(float mult) {
-        int p = Math.round(mult * 100f);
-        return (p >= 0 ? "+" : "") + p + "%";
-    }
-
-    @Override
-    public Component getName(ItemStack stack) {
-        MaterialId mat = getMaterial(stack);
-        if (!mat.isEmpty()) {
-            return Component.translatable(getDescriptionId())
-                    .append(" (")
-                    .append(Component.translatable("material.hephaestus_tools." + mat.id().getPath()))
-                    .append(")");
-        }
-        return super.getName(stack);
     }
 }
