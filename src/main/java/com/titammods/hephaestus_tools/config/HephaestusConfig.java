@@ -37,6 +37,14 @@ public final class HephaestusConfig {
         }
     }
 
+    public static void setModernInterface(boolean modern) {
+        try {
+            TABLE_INTERFACE.set(modern ? TableInterface.MODERN : TableInterface.CLASSIC);
+            TABLE_INTERFACE.save();
+        } catch (IllegalStateException ignored) {
+        }
+    }
+
     public static boolean skipCinematics() {
         try {
             return SKIP_CINEMATICS.get();

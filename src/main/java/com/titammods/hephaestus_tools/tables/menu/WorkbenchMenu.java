@@ -30,7 +30,7 @@ import java.util.Set;
 
 public class WorkbenchMenu extends ArsenalTableMenu {
 
-    public static final int AUTOFILL = 170, SWAP_BASE = 400, FILL_MOD_BASE = 500;
+    public static final int AUTOFILL = 170, REPAIR_FILL = 171, SWAP_BASE = 400, FILL_MOD_BASE = 500;
 
     private boolean cinematicServerSession;
     @Nullable private WorkbenchOrigin origin;
@@ -101,7 +101,32 @@ public class WorkbenchMenu extends ArsenalTableMenu {
 
     @Override
     protected int inputLimit(int part) {
+        if (activeTab == 0 && part == 0 && isRepair()) return 64;
         return activeTab == 1 && part == 0 ? 99 : 1;
+    }
+
+    public static int repairPerUnit(ItemStack tool) {
+        return Math.max(1, (ToolStack.getDurability(tool) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
+    }
+
+    public static int repairUnitsNeeded(ItemStack tool) {
+        if (tool.isEmpty() || !ToolStack.isInitialized(tool)) return 0;
+        int damage = ToolStack.getCurrentDamage(tool);
+        if (damage <= 0) return 0;
+        int per = repairPerUnit(tool);
+        return (damage + per - 1) / per;
+    }
+
+    public int repairUnitsUsed() {
+        if (!isRepair() || !isRepairMaterial(input(0))) return 0;
+        return Math.min(input(0).getCount(), repairUnitsNeeded(output()));
+    }
+
+    private ItemStack repaired(ItemStack tool, int units) {
+        ItemStack result = tool.copyWithCount(1);
+        int restored = repairPerUnit(result) * units;
+        result.setDamageValue(Math.max(0, ToolStack.getCurrentDamage(result) - restored));
+        return result;
     }
 
     @Override
@@ -194,10 +219,8 @@ public class WorkbenchMenu extends ArsenalTableMenu {
             if (!ToolStack.isInitialized(tool()) || !(tool().getItem() instanceof ModifiableItem)
                     || ToolStack.getCurrentDamage(tool()) <= 0 || !isRepairMaterial(input(0))) return ItemStack.EMPTY;
             for (int i = 1; i < 4; i++) if (!input(i).isEmpty()) return ItemStack.EMPTY;
-            ItemStack result = tool().copyWithCount(1);
-            int restored = Math.max(1, (ToolStack.getDurability(result) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
-            result.setDamageValue(Math.max(0, ToolStack.getCurrentDamage(result) - restored));
-            return result;
+            int units = repairUnitsUsed();
+            return units <= 0 ? ItemStack.EMPTY : repaired(tool(), units);
         }
         if (selectedTool < 0) return ItemStack.EMPTY;
         return super.preview();
@@ -234,6 +257,7 @@ public class WorkbenchMenu extends ArsenalTableMenu {
             return fillModifier(player, id - FILL_MOD_BASE);
         if (activeTab == 0) {
             if (id == AUTOFILL) { fillParts(player); return true; }
+            if (id == REPAIR_FILL) return fillRepair(player);
             if (id == REPAIR) return attemptRepair();
             if (id == ASSEMBLE) {
                 if (isRepair() || !canAssemble()) return false;
@@ -338,13 +362,38 @@ public class WorkbenchMenu extends ArsenalTableMenu {
 
     private boolean attemptRepair() {
         ItemStack current = output();
-        ItemStack material = input(0);
-        if (!isRepair() || current.isEmpty() || material.isEmpty() || ToolStack.getCurrentDamage(current) <= 0 || !isRepairMaterial(material)) return false;
-        ItemStack repaired = current.copyWithCount(1);
-        int restored = Math.max(1, (ToolStack.getDurability(repaired) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
-        repaired.setDamageValue(Math.max(0, ToolStack.getCurrentDamage(repaired) - restored));
-        blockEntity.getOutputSlot().setStackInSlot(0, repaired);
-        blockEntity.getInputSlots().extractItem(0, 1, false);
+        if (!isRepair() || current.isEmpty() || ToolStack.getCurrentDamage(current) <= 0) return false;
+        int units = repairUnitsUsed();
+        if (units <= 0) return false;
+        blockEntity.getOutputSlot().setStackInSlot(0, repaired(current, units));
+        blockEntity.getInputSlots().extractItem(0, units, false);
+        blockEntity.setChanged();
+        broadcastChanges();
+        return true;
+    }
+
+    private boolean fillRepair(Player player) {
+        if (!isRepair()) return false;
+        int needed = repairUnitsNeeded(output());
+        if (needed <= 0) return false;
+        ItemStack bench = input(0);
+        if (!bench.isEmpty() && !isRepairMaterial(bench)) { returnSlot(player, 1); bench = input(0); }
+        int have = bench.isEmpty() ? 0 : bench.getCount();
+        if (have >= needed) return true;
+        var inv = player.getInventory();
+        ItemStack put = bench.copy();
+        for (int s = 0; s < inv.getContainerSize() && have < needed; s++) {
+            ItemStack st = inv.getItem(s);
+            if (st.isEmpty() || !isRepairMaterial(st)) continue;
+            if (!put.isEmpty() && !ItemStack.isSameItemSameComponents(put, st)) continue;
+            ItemStack taken = st.split(Math.min(needed - have, st.getCount()));
+            if (put.isEmpty()) put = taken;
+            else put.grow(taken.getCount());
+            have = put.getCount();
+        }
+        if (put.isEmpty() || put.getCount() == bench.getCount()) return false;
+        blockEntity.getInputSlots().setStackInSlot(0, put);
+        inv.setChanged();
         blockEntity.setChanged();
         broadcastChanges();
         return true;

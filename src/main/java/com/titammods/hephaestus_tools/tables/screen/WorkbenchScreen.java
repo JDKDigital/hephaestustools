@@ -302,6 +302,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
     private int toolCellX(int i) { return lIn() + (i % toolCols()) * CELL; }
     private int toolCellY(int i) { return recipeY() + 16 + HG + (i / toolCols()) * CELL; }
     private int fillY() { return partRowY(partCount()) + 1; }
+    private int repairFillY() { return partRowY(1) + 1; }
 
     private int gridCols() { return Math.max(1, inW() / CELL); }
     private int gridX(int k) { return rIn() + (k % gridCols()) * CELL; }
@@ -380,7 +381,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             out.add(new Component[] {Component.literal("Esc"), tr("hint_exit_short")});
             return out;
         }
-        if (canFill() || canFillModifier()) out.add(new Component[] {Component.literal("G"), tr("hint_fill_short")});
+        if (canFill() || canFillModifier() || canFillRepair()) out.add(new Component[] {Component.literal("G"), tr("hint_fill_short")});
         if (hasSubject()) out.add(new Component[] {Component.literal("F"), tr("hint_inspect_short")});
         out.add(new Component[] {Component.literal("E"), tr(menu.isInventoryVisible() ? "hint_close_short" : "hint_bag_short"), Component.literal("H"), tr("hint_hide_short")});
         out.add(new Component[] {Component.literal("Tab"), tr("hint_tab_short")});
@@ -634,9 +635,21 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             else if (!empty) g.item(staged, x + 3, ry + 3);
             text(g, !empty ? staged.getHoverName() : need.isEmpty() ? tr("repair") : need.getHoverName(), x + 27, ry + 2, w - 27, .72f, INK);
             boolean ok = part ? buildSwapIndex() >= 0 : canRepairNow();
-            Component second = empty ? tr("repair_drop") : part ? tr(ok ? "swap_drag" : "swap_same") : tr(ok ? "repair_press" : "repair_full");
+            int needed = WorkbenchMenu.repairUnitsNeeded(menu.output());
+            Component second = empty ? (needed > 0 ? tr("repair_drop").copy().append(" (" + needed + ")") : tr("repair_full"))
+                    : part ? tr(ok ? "swap_drag" : "swap_same")
+                    : ok ? tr("repair_press").copy().append(" (" + menu.repairUnitsUsed() + "/" + needed + ")") : tr("repair_full");
             text(g, second, x + 27, ry + 13, w - 27, .58f, empty ? INK_ORANGE : ok ? INK_GREEN : INK_RED);
-            wrapped(g, tr("workbench_repair_hint"), x, ry + 30, w, .56f, INK2, 5);
+            int hintY = ry + 30;
+            if (canFillRepair()) {
+                boolean h = in(mx, my, x, repairFillY(), w, 16);
+                Component fillLabel = tr("fill_material_short");
+                int fw = Math.min(w, Math.round(font.width(fillLabel) * .58f * TEXT_BOOST));
+                text(g, fillLabel, x, repairFillY() + 4, w, .58f, h ? FILL_HOVER : FILL_LINK);
+                if (h) fill(g, x, repairFillY() + 13, fw, 1, FILL_LINK);
+                hintY = repairFillY() + 20;
+            }
+            wrapped(g, tr("workbench_repair_hint"), x, hintY, w, .56f, INK2, 5);
             return;
         }
         if (none) {
@@ -1300,6 +1313,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             if (keyCode == 32 && readyToCraft()) { startCraft(); return true; }
             if (keyCode == 71 && canFill()) { fillParts(); return true; }
             if (keyCode == 71 && canFillModifier()) { fillModifier(); return true; }
+            if (keyCode == 71 && canFillRepair()) { fillRepair(); return true; }
             if ((keyCode == 265 || keyCode == 264) && menu.getActiveTab() == 1 && toolReady() && entryCount() > 0) {
                 int nextSel = Math.floorMod(selectedEntry + (keyCode == 264 ? 1 : -1), entryCount());
                 releaseBench(nextSel);
@@ -1386,6 +1400,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 }
             return in(mx, my, lpX(), lTop(), pageW(), leftPageH());
         }
+        if (canFillRepair() && in(mx, my, lIn(), repairFillY(), inW(), 16)) { fillRepair(); return true; }
         if (partsListVisible() && menu.output().isEmpty()) {
             if (canFill() && in(mx, my, lIn(), fillY(), inW(), 16)) { fillParts(); return true; }
             for (int i = 0; i < partCount(); i++) {
@@ -2146,6 +2161,23 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
 
     private boolean canRepairNow() {
         return menu.isRepair() && ToolStack.getCurrentDamage(menu.output()) > 0 && menu.isRepairMaterial(menu.input(0));
+    }
+
+    private boolean canFillRepair() {
+        if (menu.getActiveTab() != 0 || !menu.isRepair() || toolsOpen || !menu.getCarried().isEmpty() || minecraft == null || minecraft.player == null) return false;
+        int needed = WorkbenchMenu.repairUnitsNeeded(menu.output());
+        if (needed <= 0) return false;
+        ItemStack bench = menu.input(0);
+        if (menu.isRepairMaterial(bench) && bench.getCount() >= needed) return false;
+        var inv = minecraft.player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) if (menu.isRepairMaterial(inv.getItem(i))) return true;
+        return false;
+    }
+
+    private void fillRepair() {
+        WorkbenchAssembly.expectAutoAttach();
+        send(WorkbenchMenu.REPAIR_FILL);
+        click();
     }
 
     private void startRepair() {

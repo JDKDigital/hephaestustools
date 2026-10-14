@@ -2,6 +2,7 @@ package com.titammods.hephaestus_tools.client.workbench;
 
 import com.mojang.math.Axis;
 import com.titammods.hephaestus_tools.HephaestusTools;
+import com.titammods.hephaestus_tools.client.TableCommands;
 import com.titammods.hephaestus_tools.tables.scene.WorkbenchOrigin;
 import com.titammods.hephaestus_tools.tables.scene.WorkbenchScene;
 import com.titammods.hephaestus_tools.tables.scene.WorkbenchTuning;
@@ -134,5 +135,6 @@ public final class WorkbenchClientEvents {
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         WorkbenchTuningCommand.register(event.getDispatcher());
+        TableCommands.register(event.getDispatcher());
     }
 }
