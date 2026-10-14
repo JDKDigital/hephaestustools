@@ -39,7 +39,7 @@ public final class ToolItems {
 
     public static class MattockItem extends ModifiableItem {
         public MattockItem(Properties props) { super(props); }
-        @Override public Set<ToolCategory> categories() { return Set.of(ToolCategory.PICKAXE, ToolCategory.AXE); }
+        @Override public Set<ToolCategory> categories() { return Set.of(ToolCategory.PICKAXE, ToolCategory.SHOVEL); }
     }
 
     public static class ExcavatorItem extends ModifiableItem implements IAoeTool {
