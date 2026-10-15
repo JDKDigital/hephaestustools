@@ -601,5 +601,14 @@
   "hephaestus_tools.configuration.table_interface": "Interface da mesa",
   "hephaestus_tools.configuration.table_interface.tooltip": "MODERN: bancada 3D com câmera, animações e a nova tela. CLASSIC: a tela original da Mesa de Forja.",
   "hephaestus_tools.configuration.skip_cinematics": "Pular animações",
-  "hephaestus_tools.configuration.skip_cinematics.tooltip": "Apenas na interface moderna: fabricar e modificar acontecem de uma vez, sem a animação."
+  "hephaestus_tools.configuration.skip_cinematics.tooltip": "Apenas na interface moderna: fabricar e modificar acontecem de uma vez, sem a animação.",
+  "item.hephaestus_tools.paxel": "Paxel",
+  "layout.hephaestus_tools.paxel": "Paxel",
+  "layout.hephaestus_tools.paxel.description": "Picareta, pá e machado em uma única ferramenta. Quebra quase tudo.",
+  "mastery.hephaestus_tools.pathfinder": "Desbravador",
+  "mastery.hephaestus_tools.pathfinder.desc": "Mais rápida em pedra, troncos e terra; depois economiza durabilidade e recompensa o uso contínuo.",
+  "mastery.hephaestus_tools.trailblazer": "Abridor de Trilhas",
+  "mastery.hephaestus_tools.trailblazer.desc": "Escava terra, areia, cascalho e argila em área; no Nv. 30, agache para cavar um túnel reto.",
+  "mastery.hephaestus_tools.frontier": "Fronteira",
+  "mastery.hephaestus_tools.frontier.desc": "Bônus equilibrado de coleta; depois economiza durabilidade, dá drops extras leves e recompensa sequências."
 }

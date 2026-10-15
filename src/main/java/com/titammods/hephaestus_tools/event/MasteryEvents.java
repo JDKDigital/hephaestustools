@@ -37,6 +37,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -57,6 +58,19 @@ public final class MasteryEvents {
     private static boolean isDeepBlock(BlockState s) {
         return s.is(BlockTags.BASE_STONE_OVERWORLD) || s.is(BlockTags.DEEPSLATE_ORE_REPLACEABLES)
                 || s.is(Tags.Blocks.ORES) || s.is(Blocks.DEEPSLATE) || s.is(BlockTags.STONE_ORE_REPLACEABLES);
+    }
+
+    private static boolean isPathBlock(BlockState s) {
+        return s.is(BlockTags.BASE_STONE_OVERWORLD) || s.is(BlockTags.LOGS) || MasteryAoe.isEarth(s);
+    }
+
+    private static boolean isGathering(BlockState s) {
+        return s.is(BlockTags.MINEABLE_WITH_PICKAXE) || s.is(BlockTags.MINEABLE_WITH_AXE) || s.is(BlockTags.MINEABLE_WITH_SHOVEL);
+    }
+
+    private static void spareWear(ItemStack tool, Player p, float chance) {
+        if (tool.getDamageValue() > 0 && p.getRandom().nextFloat() < chance)
+            tool.setDamageValue(tool.getDamageValue() - 1);
     }
 
     @SubscribeEvent
@@ -80,6 +94,16 @@ public final class MasteryEvents {
             case "deep_miner" -> {
                 if (lv >= 10 && p.getY() < 32 && isDeepBlock(event.getState()))
                     mult += (lv >= 30 ? 0.30f : lv >= 20 ? 0.20f : 0.10f);
+            }
+            case "pathfinder" -> {
+                if (lv >= 10 && isPathBlock(event.getState()))
+                    mult += lv >= 30 ? 0.30f : lv >= 20 ? 0.20f : 0.10f;
+                if (lv >= 30) mult += Math.min(MasteryStreak.mineCount(p.getUUID(), now), 10) * 0.02f;
+            }
+            case "frontier" -> {
+                if (lv >= 10 && isGathering(event.getState()))
+                    mult += lv >= 30 ? 0.20f : 0.12f;
+                if (lv >= 30) mult += Math.min(MasteryStreak.mineCount(p.getUUID(), now), 10) * 0.03f;
             }
             case "unstoppable" -> {
                 float hardness = event.getPosition()
@@ -138,6 +162,40 @@ public final class MasteryEvents {
                 if (state.is(BlockTags.LOGS))
                     flood(level, p, pos, s -> s.is(BlockTags.LOGS) && s.getBlock() == state.getBlock(),
                             lv >= 30 ? 32 : lv >= 20 ? 16 : 8, 1);
+            }
+            case "pathfinder" -> {
+                if (lv >= 30) MasteryStreak.mine(p.getUUID(), now, STREAK_TICKS);
+                if (lv >= 20 && isPathBlock(state)) spareWear(tool, p, lv >= 30 ? 0.25f : 0.15f);
+            }
+            case "frontier" -> {
+                if (lv >= 30) MasteryStreak.mine(p.getUUID(), now, STREAK_TICKS);
+                if (lv >= 20 && isGathering(state)) {
+                    spareWear(tool, p, 0.15f);
+                    if (srv && !state.is(Tags.Blocks.ORES) && !state.hasBlockEntity()
+                            && p.getRandom().nextFloat() < (lv >= 30 ? 0.15f : 0.10f))
+                        Block.dropResources(state, level, pos);
+                }
+            }
+            case "trailblazer" -> {
+                if (!srv || lv < 10 || !MasteryAoe.isGroundwork(state)) return;
+                Direction side = BlockSideHitHandler.getSideHit(p);
+                List<BlockPos> area;
+                if (lv >= 30 && p.isShiftKeyDown()) {
+                    area = new ArrayList<>();
+                    Direction forward = side.getOpposite();
+                    for (int i = 1; i <= 4; i++) {
+                        BlockPos np = pos.relative(forward, i);
+                        if (MasteryAoe.isGroundwork(level.getBlockState(np))) area.add(np);
+                    }
+                } else {
+                    area = MasteryAoe.square(level, pos, side, lv >= 30 ? 2 : 1, MasteryAoe::isGroundwork);
+                    if (lv >= 20) {
+                        BlockPos back = pos.relative(side.getOpposite());
+                        if (MasteryAoe.isGroundwork(level.getBlockState(back))) area.add(back);
+                    }
+                }
+                MasteryAoe.breakBlocks(p, tool, area, MasteryAoe::isGroundwork);
+                if (lv >= 20) spareWear(tool, p, 0.25f);
             }
             case "groundworker" -> {
                 if (!srv) return;

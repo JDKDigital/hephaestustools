@@ -45,6 +45,9 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
                     "item/tool/vein_hammer/front", "item/tool/vein_hammer/grip")),
             Map.entry("mattock", List.of(
                     "item/tool/mattock/axe", "item/tool/pickaxe/handle", "item/tool/mattock/pick")),
+            Map.entry("paxel", List.of(
+                    "item/tool/pickaxe/handle", "item/tool/paxel/axe",
+                    "item/tool/paxel/pick", "item/tool/paxel/shovel_part")),
             Map.entry("excavator", List.of(
                     "item/tool/excavator/head", "item/tool/excavator/grip",
                     "item/tool/excavator/handle", "item/tool/excavator/binding")),

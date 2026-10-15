@@ -601,5 +601,14 @@
   "hephaestus_tools.configuration.table_interface": "Table Interface",
   "hephaestus_tools.configuration.table_interface.tooltip": "MODERN: 3D workbench with camera, animations and the new screen. CLASSIC: the original Forge Table screen.",
   "hephaestus_tools.configuration.skip_cinematics": "Skip Cinematics",
-  "hephaestus_tools.configuration.skip_cinematics.tooltip": "Modern interface only: craft and modify happen at once, without the cinematic."
+  "hephaestus_tools.configuration.skip_cinematics.tooltip": "Modern interface only: craft and modify happen at once, without the cinematic.",
+  "item.hephaestus_tools.paxel": "Paxel",
+  "layout.hephaestus_tools.paxel": "Paxel",
+  "layout.hephaestus_tools.paxel.description": "A pickaxe, shovel and axe in one tool. Breaks almost anything.",
+  "mastery.hephaestus_tools.pathfinder": "Pathfinder",
+  "mastery.hephaestus_tools.pathfinder.desc": "Faster on stone, logs and earth; later saves durability and rewards continuous use.",
+  "mastery.hephaestus_tools.trailblazer": "Trailblazer",
+  "mastery.hephaestus_tools.trailblazer.desc": "Digs dirt, sand, gravel and clay in an area; at Lv30 sneak to dig a straight tunnel instead.",
+  "mastery.hephaestus_tools.frontier": "Frontier",
+  "mastery.hephaestus_tools.frontier.desc": "Balanced gathering bonus; later saves durability, gives light extra drops and rewards streaks."
 }

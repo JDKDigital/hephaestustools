@@ -16,6 +16,7 @@ public final class MasteryPaths {
             Map.entry("vein_hammer", List.of("vein_seeker", "chain_reaction", "motherlode")),
             Map.entry("mattock", List.of("groundworker", "cultivator", "homesteader")),
             Map.entry("excavator", List.of("earthmover", "tunnel_shaper", "clean_dig")),
+            Map.entry("paxel", List.of("pathfinder", "trailblazer", "frontier")),
             Map.entry("hand_axe", List.of("lumber_rhythm", "precision_felling", "hatchet_master")),
             Map.entry("broad_axe", List.of("timberfall", "falling_giant", "war_axe")),
             Map.entry("kama", List.of("harvest_sweep", "replanter", "green_thumb")),

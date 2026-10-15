@@ -43,6 +43,9 @@ public class ModItemModelProvider implements DataProvider {
                 "item/tool/vein_hammer/front", "item/tool/vein_hammer/grip"));
         TOOL_LAYERS.put("mattock", List.of(
                 "item/tool/mattock/axe", "item/tool/pickaxe/handle", "item/tool/mattock/pick"));
+        TOOL_LAYERS.put("paxel", List.of(
+                "item/tool/pickaxe/handle", "item/tool/paxel/axe",
+                "item/tool/paxel/pick", "item/tool/paxel/shovel_part"));
         TOOL_LAYERS.put("excavator", List.of(
                 "item/tool/excavator/head", "item/tool/excavator/grip",
                 "item/tool/excavator/handle", "item/tool/excavator/binding"));

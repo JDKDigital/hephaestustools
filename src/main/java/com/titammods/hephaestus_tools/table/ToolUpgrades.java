@@ -91,6 +91,7 @@ public final class ToolUpgrades {
 
         role(ModItems.PICKAXE.get(), ToolRole.MINING);
         role(ModItems.EXCAVATOR.get(), ToolRole.MINING);
+        role(ModItems.PAXEL.get(), ToolRole.MINING);
         role(ModItems.SLEDGE_HAMMER.get(), ToolRole.MINING);
         role(ModItems.VEIN_HAMMER.get(), ToolRole.MINING);
         role(ModItems.MATTOCK.get(), ToolRole.MINING, ToolRole.HARVEST);

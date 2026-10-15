@@ -42,6 +42,11 @@ public final class ToolItems {
         @Override public Set<ToolCategory> categories() { return Set.of(ToolCategory.PICKAXE, ToolCategory.SHOVEL); }
     }
 
+    public static class PaxelItem extends ModifiableItem {
+        public PaxelItem(Properties props) { super(props); }
+        @Override public Set<ToolCategory> categories() { return Set.of(ToolCategory.PICKAXE, ToolCategory.AXE, ToolCategory.SHOVEL); }
+    }
+
     public static class ExcavatorItem extends ModifiableItem implements IAoeTool {
         public ExcavatorItem(Properties props) { super(props); }
         @Override public Set<ToolCategory> categories() { return Set.of(ToolCategory.SHOVEL); }

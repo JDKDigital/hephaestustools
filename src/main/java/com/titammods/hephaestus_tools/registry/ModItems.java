@@ -57,6 +57,9 @@ public class ModItems {
     public static final DeferredItem<ToolItems.MattockItem> MATTOCK =
             tool("mattock", ToolItems.MattockItem::new);
 
+    public static final DeferredItem<ToolItems.PaxelItem> PAXEL =
+            tool("paxel", ToolItems.PaxelItem::new);
+
     public static final DeferredItem<ToolItems.ExcavatorItem> EXCAVATOR =
             tool("excavator", ToolItems.ExcavatorItem::new);
 
@@ -115,7 +118,7 @@ public class ModItems {
             TOOL_HANDLE_CAST, TOUGH_HANDLE_CAST, TOOL_BINDING_CAST, TOUGH_BINDING_CAST);
 
     public static final List<DeferredItem<? extends Item>> TOOLS = List.of(
-            PICKAXE, SLEDGE_HAMMER, VEIN_HAMMER, MATTOCK, EXCAVATOR, HAND_AXE,
+            PICKAXE, SLEDGE_HAMMER, VEIN_HAMMER, MATTOCK, PAXEL, EXCAVATOR, HAND_AXE,
             BROAD_AXE, KAMA, SCYTHE, DAGGER, SWORD, CLEAVER);
 
     public static final List<DeferredItem<ToolPartItem>> PARTS = List.of(
