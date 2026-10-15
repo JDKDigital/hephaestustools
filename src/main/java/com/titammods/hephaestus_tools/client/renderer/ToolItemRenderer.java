@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.client.renderer;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.serialization.MapCodec;
@@ -23,6 +24,7 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +146,23 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
     }
 
     private static final Map<Identifier, Boolean> TEXTURE_EXISTS = new ConcurrentHashMap<>();
+    private static final Map<Identifier, boolean[][]> PIXEL_MASKS = new ConcurrentHashMap<>();
+
+    private static boolean[][] mask(Identifier png) {
+        return PIXEL_MASKS.computeIfAbsent(png, path -> {
+            var resource = Minecraft.getInstance().getResourceManager().getResource(path);
+            if (resource.isEmpty()) return new boolean[0][0];
+            try (InputStream in = resource.get().open(); NativeImage image = NativeImage.read(in)) {
+                int w = image.getWidth(), h = Math.min(image.getHeight(), w);
+                boolean[][] out = new boolean[w][h];
+                for (int x = 0; x < w; x++) for (int y = 0; y < h; y++)
+                    out[x][y] = (image.getPixel(x, y) >>> 24) > 0;
+                return out;
+            } catch (Exception e) {
+                return new boolean[0][0];
+            }
+        });
+    }
 
     private static boolean exists(Identifier png) {
         return TEXTURE_EXISTS.computeIfAbsent(png,
@@ -152,6 +171,7 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
 
     public static void clearTextureCache() {
         TEXTURE_EXISTS.clear();
+        PIXEL_MASKS.clear();
     }
 
     private static List<Identifier> modifierTextures(ItemStack stack) {
@@ -215,8 +235,12 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
 
         poseStack.pushPose();
         for (Identifier texture : textures) {
+            boolean[][] pixels = mask(texture);
             collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(texture),
-                    (pose, buf) -> overlayQuads(buf, pose.pose(), packedOverlay, sky, block));
+                    (pose, buf) -> {
+                        overlayQuads(buf, pose.pose(), packedOverlay, sky, block);
+                        sideQuads(buf, pose.pose(), pixels, packedOverlay, sky, block);
+                    });
         }
         poseStack.popPose();
     }
@@ -231,6 +255,59 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
         v(buf, m, 0f, 1f, BACK_Z, 0f, 0f, -1f, packedOverlay, sky, block);
         v(buf, m, 1f, 1f, BACK_Z, 1f, 0f, -1f, packedOverlay, sky, block);
         v(buf, m, 1f, 0f, BACK_Z, 1f, 1f, -1f, packedOverlay, sky, block);
+    }
+
+    private static final float EDGE = 1f / 512f;
+
+    private static boolean solid(boolean[][] p, int x, int y) {
+        return x >= 0 && y >= 0 && x < p.length && y < p[x].length && p[x][y];
+    }
+
+    private static void sideQuads(VertexConsumer buf, Matrix4f m, boolean[][] p, int overlay, int sky, int block) {
+        int w = p.length;
+        if (w == 0) return;
+        int h = p[0].length;
+        for (int px = 0; px < w; px++) for (int py = 0; py < h; py++) {
+            if (!p[px][py]) continue;
+            float x0 = (float) px / w - EDGE, x1 = (float) (px + 1) / w + EDGE;
+            float y0 = 1f - (float) (py + 1) / h - EDGE, y1 = 1f - (float) py / h + EDGE;
+            float u0 = (px + 0.25f) / w, u1 = (px + 0.75f) / w;
+            float v0 = (py + 0.25f) / h, v1 = (py + 0.75f) / h;
+            if (!solid(p, px - 1, py)) {
+                s(buf, m, x0, y0, BACK_Z, u0, v1, -1f, 0f, overlay, sky, block);
+                s(buf, m, x0, y0, FRONT_Z, u1, v1, -1f, 0f, overlay, sky, block);
+                s(buf, m, x0, y1, FRONT_Z, u1, v0, -1f, 0f, overlay, sky, block);
+                s(buf, m, x0, y1, BACK_Z, u0, v0, -1f, 0f, overlay, sky, block);
+            }
+            if (!solid(p, px + 1, py)) {
+                s(buf, m, x1, y0, BACK_Z, u0, v1, 1f, 0f, overlay, sky, block);
+                s(buf, m, x1, y1, BACK_Z, u0, v0, 1f, 0f, overlay, sky, block);
+                s(buf, m, x1, y1, FRONT_Z, u1, v0, 1f, 0f, overlay, sky, block);
+                s(buf, m, x1, y0, FRONT_Z, u1, v1, 1f, 0f, overlay, sky, block);
+            }
+            if (!solid(p, px, py + 1)) {
+                s(buf, m, x0, y0, BACK_Z, u0, v1, 0f, -1f, overlay, sky, block);
+                s(buf, m, x1, y0, BACK_Z, u1, v1, 0f, -1f, overlay, sky, block);
+                s(buf, m, x1, y0, FRONT_Z, u1, v0, 0f, -1f, overlay, sky, block);
+                s(buf, m, x0, y0, FRONT_Z, u0, v0, 0f, -1f, overlay, sky, block);
+            }
+            if (!solid(p, px, py - 1)) {
+                s(buf, m, x0, y1, BACK_Z, u0, v1, 0f, 1f, overlay, sky, block);
+                s(buf, m, x0, y1, FRONT_Z, u0, v0, 0f, 1f, overlay, sky, block);
+                s(buf, m, x1, y1, FRONT_Z, u1, v0, 0f, 1f, overlay, sky, block);
+                s(buf, m, x1, y1, BACK_Z, u1, v1, 0f, 1f, overlay, sky, block);
+            }
+        }
+    }
+
+    private static void s(VertexConsumer buf, Matrix4f m, float x, float y, float z, float u, float vv,
+                          float nx, float ny, int packedOverlay, int sky, int block) {
+        buf.addVertex(m, x, y, z)
+                .setColor(255, 255, 255, 255)
+                .setUv(u, vv)
+                .setOverlay(packedOverlay)
+                .setUv2(block, sky)
+                .setNormal(nx, ny, 0f);
     }
 
     private static void v(VertexConsumer buf, Matrix4f m,
