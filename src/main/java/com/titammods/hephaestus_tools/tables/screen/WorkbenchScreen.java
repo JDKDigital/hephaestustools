@@ -516,6 +516,12 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 tip(bx, sy, bw, DOCK_H, tr("repair_button_hint"));
                 return;
             }
+            if (menu.isRepair() && menu.input(0).getItem() instanceof ToolPartItem) {
+                boolean ok = buildSwapIndex() >= 0;
+                readyButton(g, bx, sy, bw, DOCK_H, ok, ok && bh, tr("swap_part"));
+                tip(bx, sy, bw, DOCK_H, tr(ok ? "swap_part_hint" : "swap_same"));
+                return;
+            }
             if (menu.isRepair() && !done) return;
             if (done) { readyButton(g, bx, sy, bw, DOCK_H, true, bh, tr("take")); tip(bx, sy, bw, DOCK_H, tr("take_hint")); }
             else { readyButton(g, bx, sy, bw, DOCK_H, ready, ready && bh, tr("craft")); if (ready) tip(bx, sy, bw, DOCK_H, tr("craft_hint")); }
@@ -525,7 +531,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             int pi = stagedPart();
             ToolUpgrade su = stagedUpgrade();
             boolean isPart = staged.getItem() instanceof ToolPartItem;
-            boolean ok = !staged.isEmpty() && stagedAttached() && (isPart ? pi >= 0 && WorkbenchMenu.canSwap(menu.tool(), staged, pi)
+            boolean ok = !staged.isEmpty() && (isPart || stagedAttached()) && (isPart ? pi >= 0 && WorkbenchMenu.canSwap(menu.tool(), staged, pi)
                     : su != null && minecraft.player != null && ToolUpgrades.canApply(minecraft.player, menu.tool(), su) && morphReady());
             int slv = su == null ? 0 : ToolUpgrades.currentLevel(menu.tool(), su);
             readyButton(g, bx, sy, bw, DOCK_H, ok, ok && bh, tr(isPart ? "swap_part" : slv > 0 ? "upgrade_modifier" : "install_modifier"));
@@ -637,7 +643,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             boolean ok = part ? buildSwapIndex() >= 0 : canRepairNow();
             int needed = WorkbenchMenu.repairUnitsNeeded(menu.output());
             Component second = empty ? (needed > 0 ? tr("repair_drop").copy().append(" (" + needed + ")") : tr("repair_full"))
-                    : part ? tr(ok ? "swap_drag" : "swap_same")
+                    : part ? tr(ok ? "swap_ready" : "swap_same")
                     : ok ? tr("repair_press").copy().append(" (" + menu.repairUnitsUsed() + "/" + needed + ")") : tr("repair_full");
             text(g, second, x + 27, ry + 13, w - 27, .58f, empty ? INK_ORANGE : ok ? INK_GREEN : INK_RED);
             int hintY = ry + 30;
@@ -951,7 +957,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             ToolUpgrade su = stagedUpgrade();
             boolean ok = isPart ? pi >= 0 && WorkbenchMenu.canSwap(menu.tool(), staged, pi)
                     : su != null && minecraft.player != null && ToolUpgrades.canApply(minecraft.player, menu.tool(), su);
-            if (ok && !stagedAttached()) wrapped(g, tr("drag_staged_hint"), x, hy, w, .56f, INK_BLUE, 3);
+            if (ok && !isPart && !stagedAttached()) wrapped(g, tr("drag_staged_hint"), x, hy, w, .56f, INK_BLUE, 3);
             else wrapped(g, tr(ok ? "press_button" : isPart ? "swap_same" : "staged_cant"), x, hy, w, .56f, ok ? INK_GREEN : INK_RED, 3);
         }
     }
@@ -1394,6 +1400,11 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 if (canRepairNow()) startRepair(); else denied();
                 return true;
             }
+            if (menu.isRepair() && menu.input(0).getItem() instanceof ToolPartItem) {
+                int pi = buildSwapIndex();
+                if (pi >= 0) startSwap(pi); else denied();
+                return true;
+            }
             if (readyToCraft()) { startCraft(); return true; }
             if (!menu.output().isEmpty() && menu.getCarried().isEmpty()) {
                 Slot out = menu.slots.get(5);
@@ -1457,7 +1468,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             }
             if (fillModY >= 0 && canFillModifier() && in(mx, my, x, fillModY, w, 12)) { fillModifier(); return true; }
             if (!menu.input(0).isEmpty() && dockBtnHit(mx, my)) {
-                if (!stagedAttached()) { denied(); return true; }
+                if (!(menu.input(0).getItem() instanceof ToolPartItem) && !stagedAttached()) { denied(); return true; }
                 int pi = stagedPart();
                 ToolUpgrade up = stagedUpgrade();
                 if (pi >= 0 && WorkbenchMenu.canSwap(menu.tool(), menu.input(0), pi)) startSwap(pi);
