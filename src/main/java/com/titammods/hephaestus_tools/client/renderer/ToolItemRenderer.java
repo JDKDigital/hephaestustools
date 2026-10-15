@@ -7,6 +7,7 @@ import com.mojang.serialization.MapCodec;
 import com.titammods.hephaestus_tools.HephaestusTools;
 import com.titammods.hephaestus_tools.client.ToolColorHandler;
 import com.titammods.hephaestus_tools.client.model.ModifierModelRegistry;
+import com.titammods.hephaestus_tools.config.HephaestusConfig;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.client.Minecraft;
@@ -31,7 +32,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> {
+public class ToolItemRenderer implements SpecialModelRenderer<ToolItemRenderer.RenderData> {
+
+    public record Layer(Identifier texture, int color) {}
+
+    public record RenderData(List<Layer> layers, List<Identifier> overlays) {}
+
 
     public static final Identifier RENDERER_ID =
             Identifier.fromNamespaceAndPath(HephaestusTools.MOD_ID, "tool_modifiers");
@@ -187,137 +193,144 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
         return out;
     }
 
-    public static class Unbaked implements SpecialModelRenderer.Unbaked<List<Identifier>> {
+    public static class Unbaked implements SpecialModelRenderer.Unbaked<RenderData> {
 
         public static final MapCodec<Unbaked> CODEC = MapCodec.unit(Unbaked::new);
 
         @Override
-        public SpecialModelRenderer<List<Identifier>> bake(SpecialModelRenderer.BakingContext ctx) {
+        public SpecialModelRenderer<RenderData> bake(SpecialModelRenderer.BakingContext ctx) {
             return new ToolItemRenderer();
         }
 
         @Override
-        public MapCodec<? extends SpecialModelRenderer.Unbaked<List<Identifier>>> type() {
+        public MapCodec<? extends SpecialModelRenderer.Unbaked<RenderData>> type() {
             return CODEC;
         }
     }
 
-    private static final float FRONT_Z = 8.5f / 16f + 1f / 512f;
-    private static final float BACK_Z = 7.5f / 16f - 1f / 512f;
+    private static final float FRONT_Z = 8.5f / 16f;
+    private static final float BACK_Z = 7.5f / 16f;
 
     @Override
     public void getExtents(Consumer<Vector3fc> output) {
-        output.accept(new Vector3f(0f, 0f, BACK_Z));
+        output.accept(new Vector3f(0f, 0f, BACK_Z - 0.01f));
         output.accept(new Vector3f(1f, 0f, BACK_Z));
         output.accept(new Vector3f(0f, 1f, BACK_Z));
         output.accept(new Vector3f(1f, 1f, BACK_Z));
         output.accept(new Vector3f(0f, 0f, FRONT_Z));
         output.accept(new Vector3f(1f, 0f, FRONT_Z));
         output.accept(new Vector3f(0f, 1f, FRONT_Z));
-        output.accept(new Vector3f(1f, 1f, FRONT_Z));
+        output.accept(new Vector3f(1f, 1f, FRONT_Z + 0.01f));
     }
 
     @Override
-    public @Nullable List<Identifier> extractArgument(ItemStack stack) {
-        List<Identifier> textures = modifierTextures(stack);
-        return textures.isEmpty() ? null : textures;
+    public @Nullable RenderData extractArgument(ItemStack stack) {
+        List<String> paths = HephaestusConfig.modernInterface() ? workbenchLayersFor(stack.getItem()) : layersFor(stack.getItem());
+        List<Layer> layers = new ArrayList<>();
+        if (paths != null) {
+            for (int i = 0; i < paths.size(); i++)
+                layers.add(new Layer(png(paths.get(i)), ToolColorHandler.INSTANCE.getColor(stack, i)));
+        }
+        List<Identifier> overlays = modifierTextures(stack);
+        if (layers.isEmpty() && overlays.isEmpty()) return null;
+        return new RenderData(layers, overlays);
     }
 
+    private static final float LAYER_STEP = 1f / 2048f;
+    private static final float EDGE = 1f / 512f;
+
     @Override
-    public void submit(@Nullable List<Identifier> textures, PoseStack poseStack,
+    public void submit(@Nullable RenderData data, PoseStack poseStack,
                        SubmitNodeCollector collector,
                        int packedLight, int packedOverlay,
                        boolean hasFoil, int outlineColor) {
-        if (textures == null || textures.isEmpty()) return;
-
+        if (data == null) return;
         int sky = packedLight >> 16 & 0xFFFF;
         int block = packedLight & 0xFFFF;
-
+        int depth = 0;
         poseStack.pushPose();
-        for (Identifier texture : textures) {
+        for (Layer layer : data.layers()) {
+            boolean[][] pixels = mask(layer.texture());
+            float lift = depth++ * LAYER_STEP;
+            int color = layer.color();
+            collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(layer.texture()),
+                    (pose, buf) -> pixelGeometry(buf, pose.pose(), pixels, color, lift, 0f, packedOverlay, sky, block));
+        }
+        for (Identifier texture : data.overlays()) {
             boolean[][] pixels = mask(texture);
+            float lift = depth++ * LAYER_STEP;
             collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(texture),
-                    (pose, buf) -> {
-                        overlayQuads(buf, pose.pose(), packedOverlay, sky, block);
-                        sideQuads(buf, pose.pose(), pixels, packedOverlay, sky, block);
-                    });
+                    (pose, buf) -> pixelGeometry(buf, pose.pose(), pixels, 0xFFFFFFFF, lift, EDGE, packedOverlay, sky, block));
         }
         poseStack.popPose();
     }
-
-    private static void overlayQuads(VertexConsumer buf, Matrix4f m, int packedOverlay, int sky, int block) {
-        v(buf, m, 0f, 0f, FRONT_Z, 0f, 1f, 1f, packedOverlay, sky, block);
-        v(buf, m, 1f, 0f, FRONT_Z, 1f, 1f, 1f, packedOverlay, sky, block);
-        v(buf, m, 1f, 1f, FRONT_Z, 1f, 0f, 1f, packedOverlay, sky, block);
-        v(buf, m, 0f, 1f, FRONT_Z, 0f, 0f, 1f, packedOverlay, sky, block);
-
-        v(buf, m, 0f, 0f, BACK_Z, 0f, 1f, -1f, packedOverlay, sky, block);
-        v(buf, m, 0f, 1f, BACK_Z, 0f, 0f, -1f, packedOverlay, sky, block);
-        v(buf, m, 1f, 1f, BACK_Z, 1f, 0f, -1f, packedOverlay, sky, block);
-        v(buf, m, 1f, 0f, BACK_Z, 1f, 1f, -1f, packedOverlay, sky, block);
-    }
-
-    private static final float EDGE = 1f / 512f;
 
     private static boolean solid(boolean[][] p, int x, int y) {
         return x >= 0 && y >= 0 && x < p.length && y < p[x].length && p[x][y];
     }
 
-    private static void sideQuads(VertexConsumer buf, Matrix4f m, boolean[][] p, int overlay, int sky, int block) {
+    private static void pixelGeometry(VertexConsumer buf, Matrix4f m, boolean[][] p, int color, float lift, float grow,
+                                      int overlay, int sky, int block) {
         int w = p.length;
         if (w == 0) return;
         int h = p[0].length;
+        int a = color >>> 24 & 255, r = color >> 16 & 255, g = color >> 8 & 255, b = color & 255;
+        if (a == 0) a = 255;
+        float zf = FRONT_Z + lift, zb = BACK_Z - lift;
         for (int px = 0; px < w; px++) for (int py = 0; py < h; py++) {
             if (!p[px][py]) continue;
-            float x0 = (float) px / w - EDGE, x1 = (float) (px + 1) / w + EDGE;
-            float y0 = 1f - (float) (py + 1) / h - EDGE, y1 = 1f - (float) py / h + EDGE;
+            float fx0 = (float) px / w, fx1 = (float) (px + 1) / w;
+            float fy0 = 1f - (float) (py + 1) / h, fy1 = 1f - (float) py / h;
             float u0 = (px + 0.25f) / w, u1 = (px + 0.75f) / w;
             float v0 = (py + 0.25f) / h, v1 = (py + 0.75f) / h;
+
+            q(buf, m, fx0, fy0, zf, u0, v1, 0f, 0f, 1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx1, fy0, zf, u1, v1, 0f, 0f, 1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx1, fy1, zf, u1, v0, 0f, 0f, 1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx0, fy1, zf, u0, v0, 0f, 0f, 1f, r, g, b, a, overlay, sky, block);
+
+            q(buf, m, fx0, fy0, zb, u0, v1, 0f, 0f, -1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx0, fy1, zb, u0, v0, 0f, 0f, -1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx1, fy1, zb, u1, v0, 0f, 0f, -1f, r, g, b, a, overlay, sky, block);
+            q(buf, m, fx1, fy0, zb, u1, v1, 0f, 0f, -1f, r, g, b, a, overlay, sky, block);
+
+            float x0 = fx0 - grow, x1 = fx1 + grow, y0 = fy0 - grow, y1 = fy1 + grow;
             if (!solid(p, px - 1, py)) {
-                s(buf, m, x0, y0, BACK_Z, u0, v1, -1f, 0f, overlay, sky, block);
-                s(buf, m, x0, y0, FRONT_Z, u1, v1, -1f, 0f, overlay, sky, block);
-                s(buf, m, x0, y1, FRONT_Z, u1, v0, -1f, 0f, overlay, sky, block);
-                s(buf, m, x0, y1, BACK_Z, u0, v0, -1f, 0f, overlay, sky, block);
+                q(buf, m, x0, y0, zb, u0, v1, -1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x0, y0, zf, u1, v1, -1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x0, y1, zf, u1, v0, -1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x0, y1, zb, u0, v0, -1f, 0f, 0f, r, g, b, a, overlay, sky, block);
             }
             if (!solid(p, px + 1, py)) {
-                s(buf, m, x1, y0, BACK_Z, u0, v1, 1f, 0f, overlay, sky, block);
-                s(buf, m, x1, y1, BACK_Z, u0, v0, 1f, 0f, overlay, sky, block);
-                s(buf, m, x1, y1, FRONT_Z, u1, v0, 1f, 0f, overlay, sky, block);
-                s(buf, m, x1, y0, FRONT_Z, u1, v1, 1f, 0f, overlay, sky, block);
+                q(buf, m, x1, y0, zb, u0, v1, 1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y1, zb, u0, v0, 1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y1, zf, u1, v0, 1f, 0f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y0, zf, u1, v1, 1f, 0f, 0f, r, g, b, a, overlay, sky, block);
             }
             if (!solid(p, px, py + 1)) {
-                s(buf, m, x0, y0, BACK_Z, u0, v1, 0f, -1f, overlay, sky, block);
-                s(buf, m, x1, y0, BACK_Z, u1, v1, 0f, -1f, overlay, sky, block);
-                s(buf, m, x1, y0, FRONT_Z, u1, v0, 0f, -1f, overlay, sky, block);
-                s(buf, m, x0, y0, FRONT_Z, u0, v0, 0f, -1f, overlay, sky, block);
+                q(buf, m, x0, y0, zb, u0, v1, 0f, -1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y0, zb, u1, v1, 0f, -1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y0, zf, u1, v0, 0f, -1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x0, y0, zf, u0, v0, 0f, -1f, 0f, r, g, b, a, overlay, sky, block);
             }
             if (!solid(p, px, py - 1)) {
-                s(buf, m, x0, y1, BACK_Z, u0, v1, 0f, 1f, overlay, sky, block);
-                s(buf, m, x0, y1, FRONT_Z, u0, v0, 0f, 1f, overlay, sky, block);
-                s(buf, m, x1, y1, FRONT_Z, u1, v0, 0f, 1f, overlay, sky, block);
-                s(buf, m, x1, y1, BACK_Z, u1, v1, 0f, 1f, overlay, sky, block);
+                q(buf, m, x0, y1, zb, u0, v1, 0f, 1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x0, y1, zf, u0, v0, 0f, 1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y1, zf, u1, v0, 0f, 1f, 0f, r, g, b, a, overlay, sky, block);
+                q(buf, m, x1, y1, zb, u1, v1, 0f, 1f, 0f, r, g, b, a, overlay, sky, block);
             }
         }
     }
 
-    private static void s(VertexConsumer buf, Matrix4f m, float x, float y, float z, float u, float vv,
-                          float nx, float ny, int packedOverlay, int sky, int block) {
-        buf.addVertex(m, x, y, z)
-                .setColor(255, 255, 255, 255)
-                .setUv(u, vv)
-                .setOverlay(packedOverlay)
-                .setUv2(block, sky)
-                .setNormal(nx, ny, 0f);
-    }
-
-    private static void v(VertexConsumer buf, Matrix4f m,
-                          float x, float y, float z, float u, float vv, float normalZ,
+    private static void q(VertexConsumer buf, Matrix4f m, float x, float y, float z, float u, float vv,
+                          float nx, float ny, float nz, int r, int g, int b, int a,
                           int packedOverlay, int sky, int block) {
         buf.addVertex(m, x, y, z)
-                .setColor(255, 255, 255, 255)
+                .setColor(r, g, b, a)
                 .setUv(u, vv)
                 .setOverlay(packedOverlay)
                 .setUv2(block, sky)
-                .setNormal(0f, 0f, normalZ);
+                .setNormal(nx, ny, nz);
     }
+
 }

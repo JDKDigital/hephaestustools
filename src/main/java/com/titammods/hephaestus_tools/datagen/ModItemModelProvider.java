@@ -107,10 +107,10 @@ public class ModItemModelProvider implements DataProvider {
             if (workbench != null) {
                 futures.add(DataProvider.saveStable(cache, layeredToolModel(workbench),
                         modelItemPath.json(id("tool/workbench/" + tool))));
-                futures.add(DataProvider.saveStable(cache, styledToolClientItem(tool, layers.size()),
+                futures.add(DataProvider.saveStable(cache, toolClientItem(tool),
                         itemPath.json(id(tool))));
             } else {
-                futures.add(DataProvider.saveStable(cache, toolClientItem(tool, layers.size()),
+                futures.add(DataProvider.saveStable(cache, toolClientItem(tool),
                         itemPath.json(id(tool))));
             }
         }
@@ -149,51 +149,16 @@ public class ModItemModelProvider implements DataProvider {
         return j;
     }
 
-    private JsonObject styledToolClientItem(String tool, int layerCount) {
-        JsonObject condition = new JsonObject();
-        condition.addProperty("type", "minecraft:condition");
-        condition.addProperty("property", WORKBENCH_STYLE);
-        condition.add("on_true", toolComposite("tool/workbench/" + tool, tool, layerCount));
-        condition.add("on_false", toolComposite("tool/" + tool, tool, layerCount));
-        JsonObject j = new JsonObject();
-        j.add("model", condition);
-        return j;
-    }
-
-    private JsonObject toolClientItem(String tool, int layerCount) {
-        JsonObject j = new JsonObject();
-        j.add("model", toolComposite("tool/" + tool, tool, layerCount));
-        return j;
-    }
-
-    private JsonObject toolComposite(String modelPath, String tool, int layerCount) {
-        JsonObject base = new JsonObject();
-        base.addProperty("type", "minecraft:model");
-        base.addProperty("model", NS + ":item/" + modelPath);
-        JsonArray tints = new JsonArray();
-        for (int i = 0; i < layerCount; i++) {
-            JsonObject tint = new JsonObject();
-            tint.addProperty("type", TOOL_TINT);
-            tint.addProperty("index", i);
-            tints.add(tint);
-        }
-        base.add("tints", tints);
-
+    private JsonObject toolClientItem(String tool) {
         JsonObject overlays = new JsonObject();
         overlays.addProperty("type", "minecraft:special");
         overlays.addProperty("base", NS + ":item/tool/" + tool + "_overlay");
         JsonObject special = new JsonObject();
         special.addProperty("type", MODIFIER_RENDERER);
         overlays.add("model", special);
-
-        JsonArray models = new JsonArray();
-        models.add(base);
-        models.add(overlays);
-
-        JsonObject composite = new JsonObject();
-        composite.addProperty("type", "minecraft:composite");
-        composite.add("models", models);
-        return composite;
+        JsonObject j = new JsonObject();
+        j.add("model", overlays);
+        return j;
     }
 
     private JsonObject partClientItem(String part) {
