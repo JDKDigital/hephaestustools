@@ -122,6 +122,7 @@ dependencies {
     compileOnly "curse.maven:hephaestus-forge-1542467:9174210"
     localRuntime "curse.maven:hephaestus-forge-1542467:9174210"
     localRuntime "curse.maven:athena-841890:7970442"
+    localRuntime "curse.maven:jade-324717:9156414"
 
     implementation "curse.maven:ftb-materials-1124942:9088226"
     implementation "curse.maven:ftb-library-forge-404465:9008066"

@@ -30,6 +30,17 @@ public final class ToolTraits {
         return out;
     }
 
+    public static int fingerprint(List<MaterialId> materials) {
+        int hash = 1;
+        TraitManager traits = TraitManager.getInstance();
+        for (TraitInstance trait : collect(materials)) {
+            hash = 31 * hash + trait.id().hashCode();
+            hash = 31 * hash + trait.level();
+            hash = 31 * hash + traits.fingerprint(trait.id());
+        }
+        return hash;
+    }
+
     public static List<Identifier> ofMaterial(MaterialId material) {
         MaterialStats head = MaterialManager.getInstance().getStatsForSlot(material, 0);
         if (head == null || !head.hasTrait()) return List.of();
