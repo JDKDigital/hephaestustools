@@ -1,9 +1,9 @@
 package com.titammods.hephaestus_tools.tools.helper;
 
+import com.titammods.hephaestus_tools.effect.ToolEffects;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.materials.MaterialStats;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
 import com.titammods.hephaestus_tools.tables.layout.ToolLayouts;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import com.titammods.hephaestus_tools.tools.modifier.ModifierEffect;
@@ -189,9 +189,7 @@ public final class ToolBuildHandler {
                 finalDurability, finalMiningSpeed, finalAttackDamage,
                 finalAttackSpeed, finalEnchantability, harvestTier);
 
-        for (var trait : MaterialTrait.collect(construction.materials())) {
-            trait.applyStats(ctx);
-        }
+        ToolEffects.modifyStats(construction.materials(), ctx);
 
         List<String> activeTraits = new ArrayList<>();
         for (ToolConstructionData.ModifierEntry modEntry : construction.modifiers()) {

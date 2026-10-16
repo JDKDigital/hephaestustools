@@ -2,19 +2,18 @@ package com.titammods.hephaestus_tools.tools.part;
 
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
-import com.titammods.hephaestus_tools.materials.MaterialStats;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.materials.Material;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ToolPartItem extends Item {
@@ -59,18 +58,15 @@ public class ToolPartItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
 
         boolean shift = flag.hasShiftDown();
-        MaterialStats head = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-        Optional<MaterialTrait> trait = head != null && head.hasTrait()
-                ? MaterialTrait.byId(head.traitId()) : Optional.empty();
-        trait.ifPresent(t -> {
-            tooltip.accept(Component.translatable("trait.hephaestus_tools." + t.id())
+        for (Identifier trait : ToolTraits.ofMaterial(mat)) {
+            tooltip.accept(Component.translatable(ToolTraits.nameKey(trait))
                     .withStyle(ChatFormatting.DARK_AQUA));
             if (shift) {
                 tooltip.accept(Component.literal("  ")
-                        .append(Component.translatable("trait.hephaestus_tools." + t.id() + ".desc")
+                        .append(Component.translatable(ToolTraits.descriptionKey(trait))
                                 .withStyle(ChatFormatting.DARK_GRAY)));
             }
-        });
+        }
 
         if (shift) {
             tooltip.accept(Component.empty());

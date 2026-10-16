@@ -9,7 +9,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import com.titammods.hephaestus_tools.client.workbench.WorkbenchCraft;
 import com.titammods.hephaestus_tools.client.workbench.WorkbenchSession;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.mixin.client.SlotAccessor;
 import com.titammods.hephaestus_tools.table.ToolAssembly;
 import com.titammods.hephaestus_tools.table.MasteryLevel;
@@ -793,12 +793,11 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             g.item(partStack, x, y + 1);
             Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
             text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, .64f, INK);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-            var trait = MaterialTrait.byId(stats.traitId());
+            var trait = ToolTraits.ofMaterial(mat).stream().findFirst();
             Component tn = null, td = null;
             if (trait.isPresent()) {
-                tn = Component.translatable("trait.hephaestus_tools." + trait.get().id());
-                td = Component.translatable("trait.hephaestus_tools." + trait.get().id() + ".desc");
+                tn = Component.translatable(ToolTraits.nameKey(trait.get()));
+                td = Component.translatable(ToolTraits.descriptionKey(trait.get()));
                 text(g, tn.copy().withColor(INK_ORANGE & 0xFFFFFF).append(Component.literal("  ")).append(td.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y + lineGap, w - 20, .52f, INK2);
             } else {
                 text(g, tr("part_no_trait"), x + 20, y + lineGap, w - 20, .52f, INK3);
@@ -1764,15 +1763,14 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         var parts = ToolBuildHandler.getToolParts(details.getItem());
         for (int i = 0; i < materials.size(); i++) {
             var mat = materials.get(i);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-            var trait = MaterialTrait.byId(stats.traitId());
-            if (trait.isEmpty()) continue;
-            Component traitName = Component.translatable("trait.hephaestus_tools." + trait.get().id());
-            Component traitDesc = Component.translatable("trait.hephaestus_tools." + trait.get().id() + ".desc");
-            Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
-            Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
-            traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
-            traitRows.add(new Component[] {traitName, traitDesc, materialName});
+            for (var trait : ToolTraits.ofMaterial(mat)) {
+                Component traitName = Component.translatable(ToolTraits.nameKey(trait));
+                Component traitDesc = Component.translatable(ToolTraits.descriptionKey(trait));
+                Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+                Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
+                traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
+                traitRows.add(new Component[] {traitName, traitDesc, materialName});
+            }
         }
     }
 
