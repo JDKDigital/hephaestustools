@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.tools.nbt;
 
+import com.titammods.hephaestus_tools.api.event.ToolRecalculatedEvent;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.registry.ModComponents;
@@ -23,6 +24,7 @@ import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.item.enchantment.Enchantable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.Lazy;
 
 import java.util.ArrayList;
@@ -159,6 +161,7 @@ public final class ToolStack {
         stack.set(DataComponents.ENCHANTABLE,
                 new Enchantable(
                         Math.max(1, properties.getEnchantability())));
+        NeoForge.EVENT_BUS.post(new ToolRecalculatedEvent(stack));
     }
 
     private static void updateAttributeModifiers(ItemStack stack, ToolPropertiesData properties) {

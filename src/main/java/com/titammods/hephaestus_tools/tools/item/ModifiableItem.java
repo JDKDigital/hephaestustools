@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.tools.item;
 
+import com.titammods.hephaestus_tools.api.event.ToolTraitTooltipEvent;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.event.MasteryEvents;
 import com.titammods.hephaestus_tools.event.MasteryInteract;
@@ -44,6 +45,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.ItemAbility;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -245,6 +247,8 @@ public abstract class ModifiableItem extends Item {
         }
 
         appendTrait(stack, tooltip);
+
+        NeoForge.EVENT_BUS.post(new ToolTraitTooltipEvent(stack, tooltip));
 
         int lvl = ToolXp.getLevel(stack);
         Component rank = Component.translatable(ToolXp.rankKey(lvl));
