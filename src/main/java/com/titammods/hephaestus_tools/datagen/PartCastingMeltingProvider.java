@@ -200,7 +200,7 @@ public class PartCastingMeltingProvider implements DataProvider {
 
     private JsonObject casting(Part part, Metal metal) {
         JsonObject json = new JsonObject();
-        addConditions(json, metal);
+        addConditions(json, metal.mods());
         json.addProperty("type", FORGE + ":casting_table");
 
         json.addProperty("cast", TOOLS + ":" + part.name() + "_cast");
@@ -213,6 +213,7 @@ public class PartCastingMeltingProvider implements DataProvider {
 
     private JsonObject castCreation(Part part) {
         JsonObject json = new JsonObject();
+        addConditions(json, NO_MODS);
         json.addProperty("type", FORGE + ":casting_table");
 
         json.addProperty("cast", TOOLS + ":" + part.name());
@@ -225,7 +226,7 @@ public class PartCastingMeltingProvider implements DataProvider {
 
     private JsonObject melting(Part part, Metal metal) {
         JsonObject json = new JsonObject();
-        addConditions(json, metal);
+        addConditions(json, metal.mods());
         json.addProperty("type", FORGE + ":melting");
 
         JsonObject ingredient = new JsonObject();
@@ -262,14 +263,14 @@ public class PartCastingMeltingProvider implements DataProvider {
         return temp <= 1000 ? fluid("minecraft:lava", 50) : fluid(FORGE + ":molten_blaze", 50);
     }
 
-    private static void addConditions(JsonObject json, Metal metal) {
-        if (metal.vanilla()) return;
+    private static void addConditions(JsonObject json, List<String> mods) {
         JsonArray conditions = new JsonArray();
-        if (metal.mods().size() == 1) {
-            conditions.add(modLoaded(metal.mods().get(0)));
-        } else {
+        conditions.add(modLoaded(FORGE));
+        if (mods.size() == 1) {
+            conditions.add(modLoaded(mods.get(0)));
+        } else if (mods.size() > 1) {
             JsonArray or = new JsonArray();
-            for (String modid : metal.mods()) {
+            for (String modid : mods) {
                 or.add(modLoaded(modid));
             }
             JsonObject orCond = new JsonObject();

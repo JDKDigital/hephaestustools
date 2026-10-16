@@ -4,9 +4,8 @@
   "package": "com.titammods.hephaestus_tools.mixin",
   "compatibilityLevel": "JAVA_25",
   "refmap": "hephaestus_tools.refmap.json",
+  "plugin": "com.titammods.hephaestus_tools.compat.ForgeMixinPlugin",
   "mixins": [
-    "TableBlockEntityMixin",
-    "CastingTableRecipeMixin",
     "ServerPlayerGameModeMixin",
     "LivingEntityMixin"
   ],

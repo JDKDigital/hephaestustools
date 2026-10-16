@@ -111,12 +111,17 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
 dependencies {
     compileOnly "mezz.jei:jei-26.1.2-neoforge-api:${jei_version}"
     runtimeOnly "mezz.jei:jei-26.1.2-neoforge:${jei_version}"
 
-    implementation "curse.maven:hephaestus-forge-1542467:8933923"
-    implementation "curse.maven:athena-841890:7970442"
+    compileOnly "curse.maven:hephaestus-forge-1542467:8933923"
+    localRuntime "curse.maven:hephaestus-forge-1542467:8933923"
+    localRuntime "curse.maven:athena-841890:7970442"
 
     implementation "curse.maven:ftb-materials-1124942:8500413"
     implementation "curse.maven:ftb-library-forge-404465:8858835"
@@ -139,7 +144,8 @@ tasks.withType(ProcessResources).configureEach {
             minecraft_version   : minecraft_version,
             neoforge_version    : neoforge_version,
             mod_id              : mod_id,
-            mod_version         : mod_version
+            mod_version         : mod_version,
+            hephaestus_version  : hephaestus_version
     ]
     inputs.properties replaceProperties
 

@@ -24,6 +24,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeMap;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ public class HephaestusToolsJeiPlugin implements IModPlugin {
 
     @Override
     public void onRuntimeAvailable(IJeiRuntime jei) {
+        if (!ModList.get().isLoaded(HephaestusTools.FORGE_MOD_ID)) return;
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         RecipeMap rm = server != null ? server.getRecipeManager().recipeMap() : SyncedCastingRecipes.get();
         if (rm == null) {

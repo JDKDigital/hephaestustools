@@ -24,6 +24,13 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
+modId="hephaestus"
+type="optional"
+versionRange="[${hephaestus_version},)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
 modId="player_animation_library"
 type="required"
 versionRange="[1.2.0,)"
