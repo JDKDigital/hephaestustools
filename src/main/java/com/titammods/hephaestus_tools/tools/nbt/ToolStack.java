@@ -3,6 +3,7 @@ package com.titammods.hephaestus_tools.tools.nbt;
 import com.titammods.hephaestus_tools.api.event.ToolRecalculatedEvent;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
+import com.titammods.hephaestus_tools.materials.tier.TierManager;
 import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
@@ -150,6 +151,7 @@ public final class ToolStack {
         OptionalInt hash = MaterialManager.getInstance().fingerprint(materials);
         if (hash.isEmpty()) return hash;
         int value = 31 * hash.getAsInt() + ToolTraits.fingerprint(tool, materials);
+        value = 31 * value + TierManager.getInstance().fingerprint();
         value = 31 * value + BuiltInRegistries.ITEM.getKey(tool).hashCode();
         for (ToolConstructionData.ModifierEntry modifier : construction.modifiers()) {
             value = 31 * value + modifier.id().hashCode();

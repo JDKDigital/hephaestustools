@@ -1,23 +1,27 @@
 package com.titammods.hephaestus_tools.materials;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.titammods.hephaestus_tools.materials.tier.BuiltInTiers;
 import com.titammods.hephaestus_tools.materials.trait.TraitEntry;
 import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public record MaterialStats(
         int durability,
         float miningSpeed,
         float attackDamage,
         float attackSpeed,
-        int tierOrdinal,
+        Identifier tierId,
         int enchantability,
         float durabilityMult,
         float speedMult,
@@ -27,9 +31,16 @@ public record MaterialStats(
         Optional<List<TraitEntry>> traits
 ) {
     public static final MaterialStats EMPTY = new MaterialStats(
-            1, 1f, 1f, 1f, 0, 0,
+            1, 1f, 1f, 1f, BuiltInTiers.WOOD, 0,
             0f, 0f, 0f, 0f, "", Optional.empty()
     );
+
+    private static final Codec<Identifier> TIER_CODEC = Codec.either(Codec.INT, DefinitionId.CODEC).xmap(
+            either -> either.map(BuiltInTiers::byPosition, id -> id),
+            id -> {
+                OptionalInt position = BuiltInTiers.position(id);
+                return position.isPresent() ? Either.left(position.getAsInt()) : Either.right(id);
+            });
 
     public static final Codec<MaterialStats> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -37,7 +48,7 @@ public record MaterialStats(
                     Codec.FLOAT.optionalFieldOf("mining_speed", 1f).forGetter(MaterialStats::miningSpeed),
                     Codec.FLOAT.optionalFieldOf("attack_damage", 1f).forGetter(MaterialStats::attackDamage),
                     Codec.FLOAT.optionalFieldOf("attack_speed", 1f).forGetter(MaterialStats::attackSpeed),
-                    Codec.INT.optionalFieldOf("tier", 0).forGetter(MaterialStats::tierOrdinal),
+                    TIER_CODEC.optionalFieldOf("tier", BuiltInTiers.WOOD).forGetter(MaterialStats::tierId),
                     Codec.INT.optionalFieldOf("enchantability", 0).forGetter(MaterialStats::enchantability),
                     Codec.FLOAT.optionalFieldOf("durability_mult", 0f).forGetter(MaterialStats::durabilityMult),
                     Codec.FLOAT.optionalFieldOf("speed_mult", 0f).forGetter(MaterialStats::speedMult),
@@ -58,7 +69,7 @@ public record MaterialStats(
                         buf.writeFloat(s.miningSpeed);
                         buf.writeFloat(s.attackDamage);
                         buf.writeFloat(s.attackSpeed);
-                        buf.writeVarInt(s.tierOrdinal);
+                        buf.writeIdentifier(s.tierId);
                         buf.writeVarInt(s.enchantability);
                         buf.writeFloat(s.durabilityMult);
                         buf.writeFloat(s.speedMult);
@@ -72,7 +83,7 @@ public record MaterialStats(
                             buf.readFloat(),
                             buf.readFloat(),
                             buf.readFloat(),
-                            buf.readVarInt(),
+                            buf.readIdentifier(),
                             buf.readVarInt(),
                             buf.readFloat(),
                             buf.readFloat(),
@@ -84,7 +95,7 @@ public record MaterialStats(
             );
 
     public HarvestTier tier() {
-        return HarvestTier.byOrdinal(tierOrdinal);
+        return HarvestTier.of(tierId);
     }
 
     public boolean hasTrait() {

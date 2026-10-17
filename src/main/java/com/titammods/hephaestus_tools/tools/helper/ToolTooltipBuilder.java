@@ -248,7 +248,7 @@ public final class ToolTooltipBuilder {
     }
 
     private static Component tierName(HarvestTier tier) {
-        return Component.translatable("tooltip.hephaestus_tools.tier." + tier.id()).withStyle(ChatFormatting.WHITE);
+        return Component.translatable(tier.nameKey()).withStyle(ChatFormatting.WHITE);
     }
 
     private static int valueToColor(float value, float max) {

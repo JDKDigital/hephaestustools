@@ -305,7 +305,7 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
         }
         String[] names = {"durability", "mining_speed", "harvest", "attack_damage", "attack_speed"};
         String[] values = {String.valueOf(ToolStack.getDurability(details)), fmt(ToolStack.getMiningSpeed(details)),
-                Component.translatable("tooltip.hephaestus_tools.tier." + ToolStack.getHarvestTier(details).id()).getString(),
+                Component.translatable(ToolStack.getHarvestTier(details).nameKey()).getString(),
                 fmt(ToolStack.getAttackDamage(details)), fmt(ToolStack.getAttackSpeed(details))};
         for (int i = 0; i < 5; i++) {
             int rowY = 64 + i * (menu.getActiveTab() == 0 ? 11 : 10);

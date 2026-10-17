@@ -60,12 +60,6 @@ public final class TraitManager {
         return fingerprints.getOrDefault(id, 0);
     }
 
-    public static Optional<Identifier> resolve(String raw) {
-        if (raw == null || raw.isEmpty()) return Optional.empty();
-        if (raw.indexOf(':') < 0) return Optional.ofNullable(Identifier.tryBuild(HephaestusTools.MOD_ID, raw));
-        return Optional.ofNullable(Identifier.tryParse(raw));
-    }
-
     private void replaceAll(Map<Identifier, TraitDefinition> source) {
         Map<Identifier, Integer> hashes = new HashMap<>();
         source.forEach((id, trait) -> hashes.put(id, trait.toString().hashCode()));

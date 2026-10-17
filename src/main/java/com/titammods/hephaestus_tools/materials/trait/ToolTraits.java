@@ -2,6 +2,7 @@ package com.titammods.hephaestus_tools.materials.trait;
 
 import com.titammods.hephaestus_tools.effect.ActiveEffect;
 import com.titammods.hephaestus_tools.effect.ToolEffect;
+import com.titammods.hephaestus_tools.materials.DefinitionId;
 import com.titammods.hephaestus_tools.materials.Material;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
@@ -114,7 +115,7 @@ public final class ToolTraits {
     private static Optional<List<TraitEntry>> declared(MaterialStats stats) {
         if (stats.traits().isPresent()) return stats.traits();
         if (!stats.hasTrait()) return Optional.empty();
-        return Optional.of(TraitManager.resolve(stats.traitId())
+        return Optional.of(DefinitionId.resolve(stats.traitId())
                 .map(id -> List.of(new TraitEntry(id, 1)))
                 .orElse(List.of()));
     }

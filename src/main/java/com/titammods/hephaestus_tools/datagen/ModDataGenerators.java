@@ -21,5 +21,6 @@ public class ModDataGenerators {
         event.createProvider(ModRecipeProvider::new);
         event.createProvider(PartCastingMeltingProvider::new);
         event.createProvider(TraitProvider::new);
+        event.createProvider(TierProvider::new);
     }
 }

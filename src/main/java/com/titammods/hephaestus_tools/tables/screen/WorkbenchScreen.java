@@ -757,7 +757,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             var tier = ToolStack.getHarvestTier(details);
             inkSprite(g, spr("icon_harvest"), x, y, 8);
             text(g, tr("mines_up_to"), x + 11, y + 1, w - 70, .64f, INK2);
-            textRight(g, Component.translatable("tooltip.hephaestus_tools.tier." + tier.id()), x + w, y + 1, 60, .68f, INK);
+            textRight(g, Component.translatable(tier.nameKey()), x + w, y + 1, 60, .68f, INK);
             tip(x, y - 1, w, 11, tr("mines_up_to"), tr("help_harvest"));
             y += 15;
             y = drawSlotPips(g, x, y, w);
@@ -1745,7 +1745,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
     }
 
     private static ItemStack harvestIcon(com.titammods.hephaestus_tools.tools.stat.HarvestTier tier) {
-        return new ItemStack(switch (tier.id()) {
+        return new ItemStack(switch (tier.id().getPath()) {
             case "wood", "gold" -> net.minecraft.world.item.Items.COAL_ORE;
             case "stone" -> net.minecraft.world.item.Items.IRON_ORE;
             case "iron" -> net.minecraft.world.item.Items.DIAMOND_ORE;
