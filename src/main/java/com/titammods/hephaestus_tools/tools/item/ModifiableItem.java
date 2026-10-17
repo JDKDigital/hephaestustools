@@ -306,7 +306,7 @@ public abstract class ModifiableItem extends Item {
 
     private static void appendTrait(ItemStack stack, Consumer<Component> tooltip) {
         for (TraitInstance trait : ToolTraits.collect(stack)) {
-            tooltip.accept(Component.translatable(ToolTraits.nameKey(trait.id()))
+            tooltip.accept(ToolTooltipBuilder.traitName(trait)
                     .withStyle(ChatFormatting.DARK_AQUA));
         }
     }

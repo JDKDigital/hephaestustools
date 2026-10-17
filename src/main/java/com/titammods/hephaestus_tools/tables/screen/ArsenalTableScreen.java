@@ -13,6 +13,7 @@ import com.titammods.hephaestus_tools.table.ToolUpgrades;
 import com.titammods.hephaestus_tools.table.ToolXp;
 import com.titammods.hephaestus_tools.tables.menu.ArsenalTableMenu;
 import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.ChatFormatting;
@@ -321,8 +322,8 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
         var parts = ToolBuildHandler.getToolParts(details.getItem());
         for (int i = 0; i < materials.size(); i++) {
             var mat = materials.get(i);
-            for (var trait : ToolTraits.ofMaterial(mat)) {
-                Component traitName = Component.translatable(ToolTraits.nameKey(trait));
+            for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
+                Component traitName = ToolTooltipBuilder.traitName(trait);
                 Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
                 Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
                 traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));

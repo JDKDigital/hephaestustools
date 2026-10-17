@@ -120,12 +120,13 @@ public final class ToolTraits {
                 .orElse(List.of()));
     }
 
-    public static List<Identifier> ofMaterial(MaterialId material) {
+    public static List<TraitInstance> ofPart(MaterialId material, int role) {
+        Map<Identifier, Integer> levels = new LinkedHashMap<>();
+        for (TraitEntry trait : ofSlot(material, role)) levels.merge(trait.id(), trait.level(), Integer::sum);
         TraitManager traits = TraitManager.getInstance();
-        List<Identifier> out = new ArrayList<>();
-        for (TraitEntry trait : ofSlot(material, 0)) {
-            if (traits.get(trait.id()).isPresent() && !out.contains(trait.id())) out.add(trait.id());
-        }
+        List<TraitInstance> out = new ArrayList<>();
+        levels.forEach((id, level) -> traits.get(id).ifPresent(definition ->
+                out.add(new TraitInstance(id, definition, Math.min(level, definition.maxLevel())))));
         return out;
     }
 

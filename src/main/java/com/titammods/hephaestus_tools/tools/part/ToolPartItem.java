@@ -5,10 +5,10 @@ import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.materials.Material;
 import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits.TraitInstance;
 import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -58,12 +58,12 @@ public class ToolPartItem extends Item {
                 .withStyle(ChatFormatting.GRAY));
 
         boolean shift = flag.hasShiftDown();
-        for (Identifier trait : ToolTraits.ofMaterial(mat)) {
-            tooltip.accept(Component.translatable(ToolTraits.nameKey(trait))
+        for (TraitInstance trait : ToolTraits.ofPart(mat, partSlot)) {
+            tooltip.accept(ToolTooltipBuilder.traitName(trait)
                     .withStyle(ChatFormatting.DARK_AQUA));
             if (shift) {
                 tooltip.accept(Component.literal("  ")
-                        .append(Component.translatable(ToolTraits.descriptionKey(trait))
+                        .append(Component.translatable(ToolTraits.descriptionKey(trait.id()))
                                 .withStyle(ChatFormatting.DARK_GRAY)));
             }
         }

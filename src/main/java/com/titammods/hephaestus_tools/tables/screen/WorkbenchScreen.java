@@ -20,6 +20,7 @@ import com.titammods.hephaestus_tools.table.ToolUpgrades;
 import com.titammods.hephaestus_tools.table.ToolXp;
 import com.titammods.hephaestus_tools.tables.menu.WorkbenchMenu;
 import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.part.ToolPartItem;
@@ -32,6 +33,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
@@ -793,17 +795,30 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             g.item(partStack, x, y + 1);
             Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
             text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, .64f, INK);
-            var trait = ToolTraits.ofMaterial(mat).stream().findFirst();
-            Component tn = null, td = null;
-            if (trait.isPresent()) {
-                tn = Component.translatable(ToolTraits.nameKey(trait.get()));
-                td = Component.translatable(ToolTraits.descriptionKey(trait.get()));
+            var traits = ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i));
+            if (traits.size() == 1) {
+                Component tn = ToolTooltipBuilder.traitName(traits.getFirst());
+                Component td = Component.translatable(ToolTraits.descriptionKey(traits.getFirst().id()));
                 text(g, tn.copy().withColor(INK_ORANGE & 0xFFFFFF).append(Component.literal("  ")).append(td.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y + lineGap, w - 20, .52f, INK2);
+                tip(x, y - 1, w, pitch, partStack.getHoverName(), tn.copy().withStyle(ChatFormatting.GOLD), td, matName);
+            } else if (!traits.isEmpty()) {
+                MutableComponent names = Component.empty();
+                List<Component> lines = new ArrayList<>();
+                lines.add(partStack.getHoverName());
+                for (var trait : traits) {
+                    Component tn = ToolTooltipBuilder.traitName(trait);
+                    if (!names.getSiblings().isEmpty()) names.append(Component.literal(", "));
+                    names.append(tn.copy().withColor(INK_ORANGE & 0xFFFFFF));
+                    lines.add(tn.copy().withStyle(ChatFormatting.GOLD));
+                    lines.add(Component.translatable(ToolTraits.descriptionKey(trait.id())));
+                }
+                lines.add(matName);
+                text(g, names, x + 20, y + lineGap, w - 20, .52f, INK2);
+                tip(x, y - 1, w, pitch, lines.toArray(Component[]::new));
             } else {
                 text(g, tr("part_no_trait"), x + 20, y + lineGap, w - 20, .52f, INK3);
+                tip(x, y - 1, w, pitch, partStack.getHoverName(), matName);
             }
-            if (tn != null) tip(x, y - 1, w, pitch, partStack.getHoverName(), tn.copy().withStyle(ChatFormatting.GOLD), td, matName);
-            else tip(x, y - 1, w, pitch, partStack.getHoverName(), matName);
             y += pitch;
         }
         return y;
@@ -1763,9 +1778,9 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         var parts = ToolBuildHandler.getToolParts(details.getItem());
         for (int i = 0; i < materials.size(); i++) {
             var mat = materials.get(i);
-            for (var trait : ToolTraits.ofMaterial(mat)) {
-                Component traitName = Component.translatable(ToolTraits.nameKey(trait));
-                Component traitDesc = Component.translatable(ToolTraits.descriptionKey(trait));
+            for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
+                Component traitName = ToolTooltipBuilder.traitName(trait);
+                Component traitDesc = Component.translatable(ToolTraits.descriptionKey(trait.id()));
                 Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
                 Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
                 traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));

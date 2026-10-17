@@ -4,6 +4,8 @@ import com.titammods.hephaestus_tools.materials.Material;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.materials.MaterialStats;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits.TraitInstance;
 import com.titammods.hephaestus_tools.tools.item.ModifiableSwordItem;
 import com.titammods.hephaestus_tools.tools.modifier.ModifierEffects;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
@@ -13,6 +15,7 @@ import com.titammods.hephaestus_tools.tools.part.ToolPartItem;
 import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
 import com.titammods.hephaestus_tools.tools.stat.ToolStats;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
@@ -141,6 +144,15 @@ public final class ToolTooltipBuilder {
 
     public static Component holdShift() {
         return HOLD_SHIFT;
+    }
+
+    public static MutableComponent traitName(TraitInstance trait) {
+        MutableComponent name = Component.translatable(ToolTraits.nameKey(trait.id()));
+        if (trait.level() > 1) {
+            name.append(CommonComponents.SPACE).append(Component.translatableWithFallback(
+                    "enchantment.level." + trait.level(), roman(trait.level()).getString()));
+        }
+        return name;
     }
 
     public static List<Component> partStats(MaterialId matId, int slot) {
