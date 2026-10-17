@@ -23,8 +23,6 @@ import java.util.List;
 
 public final class ToolBuildHandler {
 
-    public static final float HANDLE_STAT_SHARE = 0.15f;
-    public static final float BINDING_STAT_SHARE = 0.25f;
     private static final float EXTRA_PART_WEIGHT = 0.5f;
 
     public record SupportStats(float durability, float miningSpeed, float attackDamage, float enchantability) {}
@@ -33,14 +31,10 @@ public final class ToolBuildHandler {
 
     private ToolBuildHandler() {}
 
-    public static float shareForSlot(int slot) {
-        return slot == 2 ? BINDING_STAT_SHARE : HANDLE_STAT_SHARE;
-    }
-
     public static SupportStats supportStats(MaterialId id, int slot) {
         MaterialManager mm = MaterialManager.getInstance();
         MaterialStats source = mm.getStats(id);
-        float share = shareForSlot(slot);
+        float share = mm.getStatsForSlot(id, slot == 2 ? 2 : 1).headShare();
         float durability = slot == 2
                 ? mm.getStatsForSlot(id, 2).durability()
                 : source.durability() * share;

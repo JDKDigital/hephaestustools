@@ -57,7 +57,7 @@ public final class MaterialManager {
 
     public MaterialStats getStatsForSlot(MaterialId id, int slot) {
         Material mat = materials.get(id);
-        return mat != null ? mat.getStatsForSlot(slot) : MaterialStats.EMPTY;
+        return mat != null ? mat.getStatsForSlot(slot) : MaterialStats.emptyFor(slot);
     }
 
     public Material getMaterial(MaterialId id) {
