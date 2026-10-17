@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -23,20 +24,20 @@ public final class ToolEffects {
 
     private ToolEffects() {}
 
-    public static List<ActiveEffect> collect(List<MaterialId> materials) {
+    public static List<ActiveEffect> collect(Item tool, List<MaterialId> materials) {
         List<ActiveEffect> out = new ArrayList<>();
-        for (TraitInstance trait : ToolTraits.collect(materials)) {
+        for (TraitInstance trait : ToolTraits.collect(tool, materials)) {
             for (ToolEffect effect : trait.definition().effects()) out.add(new ActiveEffect(effect, trait.level()));
         }
         return out;
     }
 
     public static List<ActiveEffect> collect(ItemStack tool) {
-        return collect(ToolStack.getMaterials(tool));
+        return collect(tool.getItem(), ToolStack.getMaterials(tool));
     }
 
-    public static void modifyStats(List<MaterialId> materials, ModifierStatContext stats) {
-        for (ActiveEffect active : collect(materials)) active.effect().modifyStats(stats, active.level());
+    public static void modifyStats(Item tool, List<MaterialId> materials, ModifierStatContext stats) {
+        for (ActiveEffect active : collect(tool, materials)) active.effect().modifyStats(stats, active.level());
     }
 
     public static float modifyBreakSpeed(Player player, ItemStack tool, BlockState state, @Nullable BlockPos pos, float speed) {

@@ -89,6 +89,13 @@ public final class ToolBuildHandler {
         return List.of();
     }
 
+    public static int partRole(List<Item> layoutParts, int index) {
+        if (index < layoutParts.size() && layoutParts.get(index) instanceof ToolPartItem tp) {
+            return tp.getPartSlot();
+        }
+        return (index == 0) ? 0 : (index == 1) ? 1 : (index == 2) ? 2 : 1;
+    }
+
     public static ToolPropertiesData calculateProperties(ItemStack stack, ToolConstructionData construction) {
         List<MaterialId> materials = construction.materials();
 
@@ -103,14 +110,8 @@ public final class ToolBuildHandler {
         List<PartContribution> handleParts = new ArrayList<>();
         List<PartContribution> bindingParts = new ArrayList<>();
         for (int i = 0; i < materials.size(); i++) {
-            int role;
-            if (i < layoutParts.size() && layoutParts.get(i) instanceof ToolPartItem tp) {
-                role = tp.getPartSlot();
-            } else {
-                role = (i == 0) ? 0 : (i == 1) ? 1 : (i == 2) ? 2 : 1;
-            }
             MaterialId id = materials.get(i);
-            switch (role) {
+            switch (partRole(layoutParts, i)) {
                 case 0 -> headParts.add(mm.getStatsForSlot(id, 0));
                 case 2 -> bindingParts.add(new PartContribution(id, mm.getStatsForSlot(id, 2)));
                 default -> handleParts.add(new PartContribution(id, mm.getStatsForSlot(id, 1)));
@@ -189,7 +190,7 @@ public final class ToolBuildHandler {
                 finalDurability, finalMiningSpeed, finalAttackDamage,
                 finalAttackSpeed, finalEnchantability, harvestTier);
 
-        ToolEffects.modifyStats(construction.materials(), ctx);
+        ToolEffects.modifyStats(stack.getItem(), construction.materials(), ctx);
 
         List<String> activeTraits = new ArrayList<>();
         for (ToolConstructionData.ModifierEntry modEntry : construction.modifiers()) {

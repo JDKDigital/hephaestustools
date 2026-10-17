@@ -2,9 +2,15 @@ package com.titammods.hephaestus_tools.materials;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.titammods.hephaestus_tools.materials.trait.TraitEntry;
 import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+
+import java.util.List;
+import java.util.Optional;
 
 public record MaterialStats(
         int durability,
@@ -17,11 +23,12 @@ public record MaterialStats(
         float speedMult,
         float damageMult,
         float attackSpeedMult,
-        String traitId
+        String traitId,
+        Optional<List<TraitEntry>> traits
 ) {
     public static final MaterialStats EMPTY = new MaterialStats(
             1, 1f, 1f, 1f, 0, 0,
-            0f, 0f, 0f, 0f, ""
+            0f, 0f, 0f, 0f, "", Optional.empty()
     );
 
     public static final Codec<MaterialStats> CODEC = RecordCodecBuilder.create(instance ->
@@ -36,9 +43,13 @@ public record MaterialStats(
                     Codec.FLOAT.optionalFieldOf("speed_mult", 0f).forGetter(MaterialStats::speedMult),
                     Codec.FLOAT.optionalFieldOf("damage_mult", 0f).forGetter(MaterialStats::damageMult),
                     Codec.FLOAT.optionalFieldOf("attack_speed_mult", 0f).forGetter(MaterialStats::attackSpeedMult),
-                    Codec.STRING.optionalFieldOf("trait", "").forGetter(MaterialStats::traitId)
+                    Codec.STRING.optionalFieldOf("trait", "").forGetter(MaterialStats::traitId),
+                    TraitEntry.CODEC.listOf().optionalFieldOf("traits").forGetter(MaterialStats::traits)
             ).apply(instance, MaterialStats::new)
     );
+
+    private static final StreamCodec<ByteBuf, Optional<List<TraitEntry>>> TRAITS_STREAM_CODEC =
+            ByteBufCodecs.optional(TraitEntry.STREAM_CODEC.apply(ByteBufCodecs.list()));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MaterialStats> STREAM_CODEC =
             StreamCodec.of(
@@ -54,6 +65,7 @@ public record MaterialStats(
                         buf.writeFloat(s.damageMult);
                         buf.writeFloat(s.attackSpeedMult);
                         buf.writeUtf(s.traitId != null ? s.traitId : "");
+                        TRAITS_STREAM_CODEC.encode(buf, s.traits);
                     },
                     buf -> new MaterialStats(
                             buf.readVarInt(),
@@ -66,7 +78,8 @@ public record MaterialStats(
                             buf.readFloat(),
                             buf.readFloat(),
                             buf.readFloat(),
-                            buf.readUtf()
+                            buf.readUtf(),
+                            TRAITS_STREAM_CODEC.decode(buf)
                     )
             );
 

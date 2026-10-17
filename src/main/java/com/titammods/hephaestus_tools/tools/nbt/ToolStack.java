@@ -134,15 +134,15 @@ public final class ToolStack {
     public static void refreshIfStale(ItemStack stack) {
         ToolPropertiesData data = stack.get(ModComponents.TOOL_PROPERTIES.get());
         if (data == null || !isInitialized(stack)) return;
-        fingerprint(getMaterials(stack)).ifPresent(hash -> {
+        fingerprint(stack.getItem(), getMaterials(stack)).ifPresent(hash -> {
             if (hash != data.materialsHash()) recalculate(stack);
         });
     }
 
-    private static OptionalInt fingerprint(List<MaterialId> materials) {
+    private static OptionalInt fingerprint(Item tool, List<MaterialId> materials) {
         OptionalInt hash = MaterialManager.getInstance().fingerprint(materials);
         if (hash.isEmpty()) return hash;
-        return OptionalInt.of(31 * hash.getAsInt() + ToolTraits.fingerprint(materials));
+        return OptionalInt.of(31 * hash.getAsInt() + ToolTraits.fingerprint(tool, materials));
     }
 
     public static boolean isBroken(ItemStack stack) {
@@ -154,7 +154,7 @@ public final class ToolStack {
         if (!construction.isInitialized()) return;
 
         ToolPropertiesData properties = ToolBuildHandler.calculateProperties(stack, construction)
-                .withMaterialsHash(fingerprint(construction.materials()).orElse(0));
+                .withMaterialsHash(fingerprint(stack.getItem(), construction.materials()).orElse(0));
 
         stack.set(ModComponents.TOOL_PROPERTIES.get(), properties);
 
