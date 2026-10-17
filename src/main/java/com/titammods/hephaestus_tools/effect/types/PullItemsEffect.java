@@ -5,8 +5,8 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.titammods.hephaestus_tools.effect.EffectContext;
 import com.titammods.hephaestus_tools.effect.ToolEffect;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -28,10 +28,10 @@ public record PullItemsEffect(int interval, double radius, double strength) impl
     public void inventoryTick(EffectContext context, int level) {
         Level world = context.level();
         if (world.isClientSide() || world.getGameTime() % interval != 0L) return;
-        Player player = context.player();
-        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(radius))) {
+        LivingEntity holder = context.holder();
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, holder.getBoundingBox().inflate(radius))) {
             if (item.hasPickUpDelay() || !item.isAlive()) continue;
-            Vec3 pull = player.position().add(0, 0.5, 0).subtract(item.position()).normalize().scale(strength);
+            Vec3 pull = holder.position().add(0, 0.5, 0).subtract(item.position()).normalize().scale(strength);
             item.setDeltaMovement(item.getDeltaMovement().add(pull));
         }
     }

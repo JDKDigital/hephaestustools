@@ -20,7 +20,7 @@ public record ColdScale(float below) implements EffectScale {
 
     @Override
     public float value(EffectContext context) {
-        float temperature = context.level().getBiome(context.player().blockPosition()).value().getBaseTemperature();
+        float temperature = context.level().getBiome(context.holder().blockPosition()).value().getBaseTemperature();
         return Math.max(0f, below - temperature);
     }
 }

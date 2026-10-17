@@ -20,6 +20,6 @@ public record DepthScale(int below) implements EffectScale {
 
     @Override
     public float value(EffectContext context) {
-        return Math.max(0, below - context.player().blockPosition().getY());
+        return Math.max(0, below - context.holder().blockPosition().getY());
     }
 }

@@ -12,6 +12,7 @@ import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.tags.BlockTags;
@@ -134,15 +135,27 @@ public final class ToolStack {
     public static void refreshIfStale(ItemStack stack) {
         ToolPropertiesData data = stack.get(ModComponents.TOOL_PROPERTIES.get());
         if (data == null || !isInitialized(stack)) return;
-        fingerprint(stack.getItem(), getMaterials(stack)).ifPresent(hash -> {
-            if (hash != data.materialsHash()) recalculate(stack);
-        });
+        OptionalInt hash = fingerprint(stack.getItem(), getConstruction(stack));
+        if (hash.isPresent() && hash.getAsInt() != data.materialsHash()) recalculate(stack);
     }
 
-    private static OptionalInt fingerprint(Item tool, List<MaterialId> materials) {
+    public static void refresh(ItemStack stack) {
+        if (!(stack.getItem() instanceof ModifiableItem) || !isInitialized(stack)) return;
+        if (stack.get(ModComponents.TOOL_PROPERTIES.get()) == null) recalculate(stack);
+        else refreshIfStale(stack);
+    }
+
+    private static OptionalInt fingerprint(Item tool, ToolConstructionData construction) {
+        List<MaterialId> materials = construction.materials();
         OptionalInt hash = MaterialManager.getInstance().fingerprint(materials);
         if (hash.isEmpty()) return hash;
-        return OptionalInt.of(31 * hash.getAsInt() + ToolTraits.fingerprint(tool, materials));
+        int value = 31 * hash.getAsInt() + ToolTraits.fingerprint(tool, materials);
+        value = 31 * value + BuiltInRegistries.ITEM.getKey(tool).hashCode();
+        for (ToolConstructionData.ModifierEntry modifier : construction.modifiers()) {
+            value = 31 * value + modifier.id().hashCode();
+            value = 31 * value + modifier.level();
+        }
+        return OptionalInt.of(value);
     }
 
     public static boolean isBroken(ItemStack stack) {
@@ -154,7 +167,7 @@ public final class ToolStack {
         if (!construction.isInitialized()) return;
 
         ToolPropertiesData properties = ToolBuildHandler.calculateProperties(stack, construction)
-                .withMaterialsHash(fingerprint(stack.getItem(), construction.materials()).orElse(0));
+                .withMaterialsHash(fingerprint(stack.getItem(), construction).orElse(0));
 
         stack.set(ModComponents.TOOL_PROPERTIES.get(), properties);
 

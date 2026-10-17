@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import com.titammods.hephaestus_tools.HephaestusTools;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.network.SyncMaterialsPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
@@ -86,6 +87,7 @@ public final class MaterialManager {
         materials.putAll(source);
         fingerprints.clear();
         source.forEach((id, material) -> fingerprints.put(id, material.toString().hashCode()));
+        ToolTraits.invalidate();
     }
 
     public static void receiveSync(Map<MaterialId, Material> synced) {

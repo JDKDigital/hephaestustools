@@ -3,6 +3,7 @@ package com.titammods.hephaestus_tools.event;
 import com.titammods.hephaestus_tools.HephaestusTools;
 import com.titammods.hephaestus_tools.effect.ToolEffects;
 import com.titammods.hephaestus_tools.tools.helper.ToolCombat;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,7 +32,7 @@ public class ToolTraitEvents {
 
     @SubscribeEvent
     public static void onBlockDrops(BlockDropsEvent event) {
-        if (!(event.getBreaker() instanceof Player player)) return;
-        ToolEffects.modifyDrops(event.getLevel(), player, event.getTool(), event.getState(), event.getPos(), event.getDrops());
+        if (!(event.getBreaker() instanceof LivingEntity breaker)) return;
+        ToolEffects.modifyDrops(event.getLevel(), breaker, event.getTool(), event.getState(), event.getPos(), event.getDrops());
     }
 }

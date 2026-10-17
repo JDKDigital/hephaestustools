@@ -71,6 +71,7 @@ public final class TraitManager {
         source.forEach((id, trait) -> hashes.put(id, trait.toString().hashCode()));
         traits = Collections.unmodifiableMap(new LinkedHashMap<>(source));
         fingerprints = Map.copyOf(hashes);
+        ToolTraits.invalidate();
     }
 
     public static void receiveSync(List<SyncTraitsPayload.Entry> synced) {
