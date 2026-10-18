@@ -7,6 +7,7 @@ import com.titammods.hephaestus_tools.effect.EffectRegistries;
 import com.titammods.hephaestus_tools.registry.ModBlocks;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.registry.ModCreativeTabs;
+import com.titammods.hephaestus_tools.registry.ModDataMaps;
 import com.titammods.hephaestus_tools.registry.ModItems;
 import com.titammods.hephaestus_tools.registry.ModMenus;
 import com.titammods.hephaestus_tools.registry.ModRecipes;
@@ -38,6 +39,7 @@ public class HephaestusTools {
         ModCreativeTabs.TABS.register(modBus);
         ModSounds.SOUNDS.register(modBus);
         EffectRegistries.register(modBus);
+        modBus.addListener(ModDataMaps::register);
 
         ModDataGenerators.register(modBus);
 

@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.tools.helper;
 
+import com.titammods.hephaestus_tools.registry.ModDataMaps;
 import com.titammods.hephaestus_tools.tools.modifier.ModifierEffects;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
@@ -16,7 +17,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public final class ToolEnchantments {
@@ -30,9 +30,6 @@ public final class ToolEnchantments {
     public static final ResourceKey<Enchantment> EFFICIENCY = key("efficiency");
     public static final ResourceKey<Enchantment> UNBREAKING = key("unbreaking");
     public static final ResourceKey<Enchantment> MENDING = key("mending");
-
-    private static final List<ResourceKey<Enchantment>> BANNED = List.of(
-            SILK_TOUCH, LOOTING, FORTUNE, SHARPNESS, SWEEPING_EDGE, EFFICIENCY, UNBREAKING, MENDING);
 
     private static final Map<ResourceKey<Enchantment>, Identifier> MERGED = merged();
 
@@ -96,14 +93,13 @@ public final class ToolEnchantments {
         return ResourceKey.create(Registries.ENCHANTMENT, Identifier.withDefaultNamespace(path));
     }
 
-    public static List<ResourceKey<Enchantment>> banned() {
-        return BANNED;
+    public static boolean isBanned(Holder<Enchantment> enchantment) {
+        EnchantmentLimit limit = enchantment.getData(ModDataMaps.ENCHANTMENT_LIMITS);
+        return limit != null && limit.maxLevel() == 0;
     }
 
-    public static boolean isBanned(Holder<Enchantment> enchantment) {
-        for (ResourceKey<Enchantment> key : BANNED) {
-            if (enchantment.is(key)) return true;
-        }
-        return false;
+    public static int limit(Holder<Enchantment> enchantment, int level) {
+        EnchantmentLimit limit = enchantment.getData(ModDataMaps.ENCHANTMENT_LIMITS);
+        return limit == null ? level : Math.min(level, limit.maxLevel());
     }
 }
