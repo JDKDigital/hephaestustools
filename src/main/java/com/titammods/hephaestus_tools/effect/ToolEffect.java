@@ -6,6 +6,7 @@ import com.titammods.hephaestus_tools.tools.modifier.ModifierStatContext;
 import net.minecraft.world.entity.item.ItemEntity;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 public interface ToolEffect {
@@ -30,6 +31,18 @@ public interface ToolEffect {
     default int modifyWear(EffectContext context, int amount, WearCause cause, int level) {
         return amount;
     }
+
+    default Optional<ItemUse> itemUse(int level) {
+        return Optional.empty();
+    }
+
+    default boolean canStartUse(EffectContext context, int level) {
+        return true;
+    }
+
+    default void useTick(EffectContext context, int remaining, int level) {}
+
+    default void finishUse(EffectContext context, int level) {}
 
     default void inventoryTick(EffectContext context, int level) {}
 

@@ -1,6 +1,7 @@
 package com.titammods.hephaestus_tools.tools.item;
 
 import com.titammods.hephaestus_tools.api.event.ToolTraitTooltipEvent;
+import com.titammods.hephaestus_tools.effect.ItemUse;
 import com.titammods.hephaestus_tools.effect.ToolEffects;
 import com.titammods.hephaestus_tools.effect.WearCause;
 import com.titammods.hephaestus_tools.materials.MaterialId;
@@ -28,6 +29,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -39,6 +41,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemInstance;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.TooltipDisplay;
@@ -251,6 +254,37 @@ public abstract class ModifiableItem extends Item {
             }
         }
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+        if (ToolEffects.canStartUse(player, player.getItemInHand(hand), hand)) {
+            player.startUsingItem(hand);
+            return InteractionResult.CONSUME;
+        }
+        return super.use(level, player, hand);
+    }
+
+    @Override
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ToolEffects.itemUse(stack).map(ItemUse::animation).orElseGet(() -> super.getUseAnimation(stack));
+    }
+
+    @Override
+    public int getUseDuration(ItemStack stack, LivingEntity user) {
+        return ToolEffects.itemUse(stack).map(ItemUse::duration).orElseGet(() -> super.getUseDuration(stack, user));
+    }
+
+    @Override
+    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int ticksRemaining) {
+        ToolEffects.useTick(entity, stack, ticksRemaining);
+        super.onUseTick(level, entity, stack, ticksRemaining);
+    }
+
+    @Override
+    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
+        if (ToolEffects.finishUse(entity, stack)) return stack;
+        return super.finishUsingItem(stack, level, entity);
     }
 
     @Override

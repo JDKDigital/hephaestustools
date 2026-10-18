@@ -6,6 +6,7 @@ import com.titammods.hephaestus_tools.tools.modifier.ModifierStatContext;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class ToolEffects {
 
@@ -61,6 +63,40 @@ public final class ToolEffects {
             amount = Math.max(0, active.effect().modifyWear(context, amount, cause, active.level()));
         }
         return amount;
+    }
+
+    public static Optional<ItemUse> itemUse(ItemStack tool) {
+        ActiveEffect active = useEffect(tool);
+        return active == null ? Optional.empty() : active.effect().itemUse(active.level());
+    }
+
+    public static boolean canStartUse(LivingEntity user, ItemStack tool, InteractionHand hand) {
+        ActiveEffect active = useEffect(tool);
+        return active != null && active.effect().canStartUse(EffectContext.holding(user, tool, hand.asEquipmentSlot()), active.level());
+    }
+
+    public static void useTick(LivingEntity user, ItemStack tool, int remaining) {
+        ActiveEffect active = useEffect(tool);
+        if (active != null) active.effect().useTick(using(user, tool), remaining, active.level());
+    }
+
+    public static boolean finishUse(LivingEntity user, ItemStack tool) {
+        ActiveEffect active = useEffect(tool);
+        if (active == null) return false;
+        active.effect().finishUse(using(user, tool), active.level());
+        return true;
+    }
+
+    private static @Nullable ActiveEffect useEffect(ItemStack tool) {
+        if (!ToolStack.isUsable(tool)) return null;
+        for (ActiveEffect active : collect(tool)) {
+            if (active.effect().itemUse(active.level()).isPresent()) return active;
+        }
+        return null;
+    }
+
+    private static EffectContext using(LivingEntity user, ItemStack tool) {
+        return EffectContext.holding(user, tool, user.getUsedItemHand().asEquipmentSlot());
     }
 
     public static void inventoryTick(ItemStack tool, ServerLevel level, LivingEntity holder, @Nullable EquipmentSlot slot) {
