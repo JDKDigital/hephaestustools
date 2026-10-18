@@ -25,6 +25,10 @@ public interface ToolEffect {
         return amount;
     }
 
+    default int modifyWear(EffectContext context, int amount, WearCause cause, int level) {
+        return amount;
+    }
+
     default void inventoryTick(EffectContext context, int level) {}
 
     default boolean ticksWhileBroken() {

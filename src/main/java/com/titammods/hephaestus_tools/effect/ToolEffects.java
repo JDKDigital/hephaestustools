@@ -46,6 +46,17 @@ public final class ToolEffects {
         return amount;
     }
 
+    public static int modifyWear(LivingEntity holder, ItemStack tool, int amount, WearCause cause) {
+        if (!ToolStack.isUsable(tool)) return amount;
+        EquipmentSlot slot = holder.getMainHandItem() == tool ? EquipmentSlot.MAINHAND
+                : holder.getOffhandItem() == tool ? EquipmentSlot.OFFHAND : null;
+        EffectContext context = EffectContext.holding(holder, tool, slot);
+        for (ActiveEffect active : collect(tool)) {
+            amount = Math.max(0, active.effect().modifyWear(context, amount, cause, active.level()));
+        }
+        return amount;
+    }
+
     public static void inventoryTick(ItemStack tool, ServerLevel level, LivingEntity holder, @Nullable EquipmentSlot slot) {
         if (!ToolStack.isInitialized(tool)) return;
         EffectContext context = new EffectContext(level, holder, tool, null, null, null, slot);

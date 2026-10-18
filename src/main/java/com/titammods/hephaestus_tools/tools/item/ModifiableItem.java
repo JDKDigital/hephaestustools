@@ -2,6 +2,7 @@ package com.titammods.hephaestus_tools.tools.item;
 
 import com.titammods.hephaestus_tools.api.event.ToolTraitTooltipEvent;
 import com.titammods.hephaestus_tools.effect.ToolEffects;
+import com.titammods.hephaestus_tools.effect.WearCause;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.event.MasteryEvents;
 import com.titammods.hephaestus_tools.event.MasteryInteract;
@@ -9,6 +10,7 @@ import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.materials.trait.ToolTraits.TraitInstance;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.table.ToolXp;
+import com.titammods.hephaestus_tools.tools.aoe.PlayerBlockBreaks;
 import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import com.titammods.hephaestus_tools.tools.helper.ToolDurability;
 import com.titammods.hephaestus_tools.tools.helper.ToolEnchantments;
@@ -131,8 +133,11 @@ public abstract class ModifiableItem extends Item {
 
     @Override
     public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, @Nullable T entity, Consumer<Item> onBroken) {
+        WearCause cause = ToolDurability.takeCause();
         if (ToolStack.isInitialized(stack) && ToolStack.getProperties(stack).getStat(ToolStats.INDESTRUCTIBLE, 0f) > 0f) return 0;
-        return super.damageItem(stack, amount, entity, onBroken);
+        int wear = super.damageItem(stack, amount, entity, onBroken);
+        if (entity == null || entity.hasInfiniteMaterials() || !stack.isDamageableItem()) return wear;
+        return ToolEffects.modifyWear(entity, stack, wear, cause);
     }
 
     public float getAttackDamageBonus() { return 0f; }
@@ -184,7 +189,8 @@ public abstract class ModifiableItem extends Item {
                              BlockPos pos, LivingEntity entity) {
         if (level instanceof ServerLevel serverLevel && state.getDestroySpeed(level, pos) > 0
                 && !MasteryEvents.sparesAoeWear(stack, entity)) {
-            ToolDurability.hurt(stack, 1, serverLevel, entity);
+            ToolDurability.hurt(stack, 1, serverLevel, entity,
+                    PlayerBlockBreaks.isBreaking() ? WearCause.AREA_BLOCK : WearCause.BLOCK);
         }
         return true;
     }
@@ -193,7 +199,7 @@ public abstract class ModifiableItem extends Item {
     public void hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         super.hurtEnemy(stack, target, attacker);
         if (attacker.level() instanceof ServerLevel serverLevel) {
-            ToolDurability.hurt(stack, 1, serverLevel, attacker);
+            ToolDurability.hurt(stack, 1, serverLevel, attacker, WearCause.ATTACK);
         }
     }
 
@@ -241,7 +247,7 @@ public abstract class ModifiableItem extends Item {
         if (!level.isClientSide()) {
             level.setBlock(pos, modified, 11);
             if (player != null && !MasteryInteract.isTilling() && level instanceof ServerLevel serverLevel) {
-                ToolDurability.hurt(stack, 1, serverLevel, player);
+                ToolDurability.hurt(stack, 1, serverLevel, player, WearCause.USE);
             }
         }
         return InteractionResult.SUCCESS;
