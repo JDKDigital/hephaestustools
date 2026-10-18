@@ -5,6 +5,7 @@ import com.titammods.hephaestus_tools.effect.EffectOperation;
 import com.titammods.hephaestus_tools.effect.ScaledAmount;
 import com.titammods.hephaestus_tools.effect.StatType;
 import com.titammods.hephaestus_tools.effect.ToolEffect;
+import com.titammods.hephaestus_tools.effect.conditions.EquippedCondition;
 import com.titammods.hephaestus_tools.effect.conditions.TargetInTagCondition;
 import com.titammods.hephaestus_tools.effect.conditions.TargetWetCondition;
 import com.titammods.hephaestus_tools.effect.scales.ColdScale;
@@ -21,10 +22,12 @@ import com.titammods.hephaestus_tools.effect.types.StatMultiplyEffect;
 import com.titammods.hephaestus_tools.effect.LevelValue;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.EntityTypeTags;
+import net.minecraft.world.entity.EquipmentSlotGroup;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public final class BuiltInTraits {
 
@@ -56,7 +59,8 @@ public final class BuiltInTraits {
         add(out, "pierce", new BonusDamageEffect(EffectOperation.ADD,
                 ScaledAmount.scaled(0.2f, TargetArmorScale.INSTANCE, 4.0f)));
         add(out, "cultivated", new RepairEffect(40, LevelValue.of(1f), true));
-        add(out, "magnetic", new PullItemsEffect(5, 5.0, 0.12));
+        add(out, "magnetic", new PullItemsEffect(5, 5.0, 0.12,
+                Optional.of(new EquippedCondition(EquipmentSlotGroup.HAND))));
         add(out, "shock", new BonusDamageEffect(EffectOperation.ADD, ScaledAmount.of(2.5f),
                 TargetWetCondition.INSTANCE));
         add(out, "temperate",

@@ -3,6 +3,7 @@ package com.titammods.hephaestus_tools.effect.types;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.titammods.hephaestus_tools.effect.EffectCondition;
 import com.titammods.hephaestus_tools.effect.EffectContext;
 import com.titammods.hephaestus_tools.effect.ToolEffect;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,13 +11,17 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public record PullItemsEffect(int interval, double radius, double strength) implements ToolEffect {
+import java.util.Optional;
+
+public record PullItemsEffect(int interval, double radius, double strength, Optional<EffectCondition> condition)
+        implements ToolEffect {
 
     public static final MapCodec<PullItemsEffect> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     Codec.intRange(1, Integer.MAX_VALUE).fieldOf("interval").forGetter(PullItemsEffect::interval),
                     Codec.DOUBLE.fieldOf("radius").forGetter(PullItemsEffect::radius),
-                    Codec.DOUBLE.fieldOf("strength").forGetter(PullItemsEffect::strength)
+                    Codec.DOUBLE.fieldOf("strength").forGetter(PullItemsEffect::strength),
+                    EffectCondition.CODEC.optionalFieldOf("condition").forGetter(PullItemsEffect::condition)
             ).apply(instance, PullItemsEffect::new));
 
     @Override
@@ -28,6 +33,7 @@ public record PullItemsEffect(int interval, double radius, double strength) impl
     public void inventoryTick(EffectContext context, int level) {
         Level world = context.level();
         if (world.isClientSide() || world.getGameTime() % interval != 0L) return;
+        if (condition.isPresent() && !condition.get().test(context)) return;
         LivingEntity holder = context.holder();
         for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, holder.getBoundingBox().inflate(radius))) {
             if (item.hasPickUpDelay() || !item.isAlive()) continue;

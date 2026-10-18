@@ -8,6 +8,7 @@ import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.helper.ToolCombat;
 import com.titammods.hephaestus_tools.tools.stat.ToolStats;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,6 +25,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.enchanting.GetEnchantmentLevelEvent;
 
+import java.util.List;
 import java.util.function.IntSupplier;
 
 @EventBusSubscriber(modid = HephaestusTools.MOD_ID)
@@ -62,8 +65,12 @@ public final class ModifierEffectEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEnchantments(GetEnchantmentLevelEvent event) {
         if (!(event.getStack() instanceof ItemStack tool) || !(tool.getItem() instanceof ModifiableItem)) return;
-        for (ResourceKey<Enchantment> banned : ToolEnchantments.banned()) {
-            grant(event, banned, () -> 0);
+        ItemEnchantments.Mutable enchantments = event.getEnchantments();
+        for (Holder<Enchantment> enchantment : List.copyOf(enchantments.keySet())) {
+            if (!event.isTargetting(enchantment)) continue;
+            int level = enchantments.getLevel(enchantment);
+            int limited = ToolEnchantments.limit(enchantment, level);
+            if (limited < level) enchantments.set(enchantment, limited);
         }
         grant(event, ToolEnchantments.SILK_TOUCH, () -> modLevel(tool, ModifierEffects.SILK_TOUCH));
         grant(event, ToolEnchantments.FORTUNE, () -> stat(tool, ToolStats.FORTUNE));
