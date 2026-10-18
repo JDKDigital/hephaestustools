@@ -25,6 +25,8 @@ public interface ToolEffect {
         return amount;
     }
 
+    default void afterHit(EffectContext context, HitDetails hit, int level) {}
+
     default int modifyWear(EffectContext context, int amount, WearCause cause, int level) {
         return amount;
     }

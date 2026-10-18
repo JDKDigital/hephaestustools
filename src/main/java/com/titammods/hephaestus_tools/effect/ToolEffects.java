@@ -46,6 +46,12 @@ public final class ToolEffects {
         return amount;
     }
 
+    public static void afterHit(LivingEntity attacker, LivingEntity target, ItemStack tool, HitDetails hit) {
+        if (!ToolStack.isUsable(tool)) return;
+        EffectContext context = EffectContext.attacking(attacker, tool, target);
+        for (ActiveEffect active : collect(tool)) active.effect().afterHit(context, hit, active.level());
+    }
+
     public static int modifyWear(LivingEntity holder, ItemStack tool, int amount, WearCause cause) {
         if (!ToolStack.isUsable(tool)) return amount;
         EquipmentSlot slot = holder.getMainHandItem() == tool ? EquipmentSlot.MAINHAND
