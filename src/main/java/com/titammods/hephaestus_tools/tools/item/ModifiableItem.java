@@ -14,6 +14,7 @@ import com.titammods.hephaestus_tools.tools.helper.ToolDurability;
 import com.titammods.hephaestus_tools.tools.helper.ToolEnchantments;
 import com.titammods.hephaestus_tools.tools.nbt.ToolPropertiesData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
+import com.titammods.hephaestus_tools.tools.stat.ToolStats;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -48,6 +49,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.ItemAbility;
 import net.neoforged.neoforge.common.NeoForge;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,6 +127,12 @@ public abstract class ModifiableItem extends Item {
     @Override
     public boolean isDamageable(ItemStack stack) {
         return ToolStack.isInitialized(stack);
+    }
+
+    @Override
+    public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, @Nullable T entity, Consumer<Item> onBroken) {
+        if (ToolStack.isInitialized(stack) && ToolStack.getProperties(stack).getStat(ToolStats.INDESTRUCTIBLE, 0f) > 0f) return 0;
+        return super.damageItem(stack, amount, entity, onBroken);
     }
 
     public float getAttackDamageBonus() { return 0f; }
