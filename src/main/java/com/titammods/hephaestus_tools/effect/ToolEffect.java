@@ -32,6 +32,10 @@ public interface ToolEffect {
         return amount;
     }
 
+    default int modifyRepair(EffectContext context, int amount, int level) {
+        return amount;
+    }
+
     default Optional<ItemUse> itemUse(int level) {
         return Optional.empty();
     }

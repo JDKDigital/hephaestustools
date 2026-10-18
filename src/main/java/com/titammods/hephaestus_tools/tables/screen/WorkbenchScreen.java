@@ -650,7 +650,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             else if (!empty) g.item(staged, x + 3, ry + 3);
             text(g, !empty ? staged.getHoverName() : need.isEmpty() ? tr("repair") : need.getHoverName(), x + 27, ry + 2, w - 27, .72f, INK);
             boolean ok = part ? buildSwapIndex() >= 0 : canRepairNow();
-            int needed = WorkbenchMenu.repairUnitsNeeded(menu.output());
+            int needed = menu.repairUnitsNeeded(menu.output());
             Component second = empty ? (needed > 0 ? tr("repair_drop").copy().append(" (" + needed + ")") : tr("repair_full"))
                     : part ? tr(ok ? "swap_ready" : "swap_same")
                     : ok ? tr("repair_press").copy().append(" (" + menu.repairUnitsUsed() + "/" + needed + ")") : tr("repair_full");
@@ -2270,7 +2270,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
 
     private boolean canFillRepair() {
         if (menu.getActiveTab() != 0 || !menu.isRepair() || toolsOpen || !menu.getCarried().isEmpty() || minecraft == null || minecraft.player == null) return false;
-        int needed = WorkbenchMenu.repairUnitsNeeded(menu.output());
+        int needed = menu.repairUnitsNeeded(menu.output());
         if (needed <= 0) return false;
         ItemStack bench = menu.input(0);
         if (menu.isRepairMaterial(bench) && bench.getCount() >= needed) return false;

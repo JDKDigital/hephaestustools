@@ -65,6 +65,13 @@ public final class ToolEffects {
         return amount;
     }
 
+    public static int modifyRepair(LivingEntity repairer, ItemStack tool, int amount) {
+        if (!ToolStack.isInitialized(tool)) return amount;
+        EffectContext context = EffectContext.holding(repairer, tool, null);
+        for (ActiveEffect active : collect(tool)) amount = active.effect().modifyRepair(context, amount, active.level());
+        return amount;
+    }
+
     public static Optional<ItemUse> itemUse(ItemStack tool) {
         ActiveEffect active = useEffect(tool);
         return active == null ? Optional.empty() : active.effect().itemUse(active.level());
