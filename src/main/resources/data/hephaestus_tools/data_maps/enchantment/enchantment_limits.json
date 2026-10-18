@@ -1,5 +1,6 @@
 {
   "values": {
+    "#minecraft:in_enchanting_table": { "max_level": 5 },
     "minecraft:efficiency":    { "max_level": 0 },
     "minecraft:unbreaking":    { "max_level": 0 },
     "minecraft:mending":       { "max_level": 0 },
