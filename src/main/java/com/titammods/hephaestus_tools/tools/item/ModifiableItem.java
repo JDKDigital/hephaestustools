@@ -290,7 +290,7 @@ public abstract class ModifiableItem extends Item {
         super.inventoryTick(stack, level, entity, slot);
         ToolStack.refreshIfStale(stack);
         if (!(entity instanceof Player player) || !ToolStack.isInitialized(stack)) return;
-        ToolEffects.inventoryTick(stack, level, player);
+        ToolEffects.inventoryTick(stack, level, player, slot);
     }
 
     @Override

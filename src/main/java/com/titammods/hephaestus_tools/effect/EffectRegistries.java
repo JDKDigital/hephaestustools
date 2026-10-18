@@ -2,6 +2,7 @@ package com.titammods.hephaestus_tools.effect;
 
 import com.mojang.serialization.MapCodec;
 import com.titammods.hephaestus_tools.HephaestusTools;
+import com.titammods.hephaestus_tools.effect.conditions.EquippedCondition;
 import com.titammods.hephaestus_tools.effect.conditions.TargetInTagCondition;
 import com.titammods.hephaestus_tools.effect.conditions.TargetWetCondition;
 import com.titammods.hephaestus_tools.effect.scales.ColdScale;
@@ -55,6 +56,7 @@ public final class EffectRegistries {
 
     public static final Supplier<MapCodec<TargetInTagCondition>> TARGET_IN_TAG = CONDITION_TYPES.register("target_in_tag", () -> TargetInTagCondition.CODEC);
     public static final Supplier<MapCodec<TargetWetCondition>> TARGET_WET = CONDITION_TYPES.register("target_wet", () -> TargetWetCondition.CODEC);
+    public static final Supplier<MapCodec<EquippedCondition>> EQUIPPED = CONDITION_TYPES.register("equipped", () -> EquippedCondition.CODEC);
 
     private EffectRegistries() {}
 

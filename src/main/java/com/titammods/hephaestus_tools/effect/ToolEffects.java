@@ -6,6 +6,7 @@ import com.titammods.hephaestus_tools.tools.modifier.ModifierStatContext;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -45,9 +46,9 @@ public final class ToolEffects {
         return amount;
     }
 
-    public static void inventoryTick(ItemStack tool, ServerLevel level, LivingEntity holder) {
+    public static void inventoryTick(ItemStack tool, ServerLevel level, LivingEntity holder, @Nullable EquipmentSlot slot) {
         if (!ToolStack.isInitialized(tool)) return;
-        EffectContext context = new EffectContext(level, holder, tool, null, null, null);
+        EffectContext context = new EffectContext(level, holder, tool, null, null, null, slot);
         for (ActiveEffect active : collect(tool)) {
             if (ToolStack.isUsable(tool) || active.effect().ticksWhileBroken()) {
                 active.effect().inventoryTick(context, active.level());
@@ -58,7 +59,7 @@ public final class ToolEffects {
     public static void modifyDrops(ServerLevel level, LivingEntity breaker, ItemStack tool, BlockState state, BlockPos pos,
                                    List<ItemEntity> drops) {
         if (!ToolStack.isUsable(tool)) return;
-        EffectContext context = new EffectContext(level, breaker, tool, null, state, pos);
+        EffectContext context = new EffectContext(level, breaker, tool, null, state, pos, EquipmentSlot.MAINHAND);
         for (ActiveEffect active : collect(tool)) active.effect().modifyDrops(context, drops, active.level());
     }
 }
