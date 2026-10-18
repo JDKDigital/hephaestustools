@@ -5,11 +5,11 @@
       "modid": "iceandfire"
     }
   ],
-  "id": "hephaestus_tools:dragonsteel_lightning",
+  "id": "hephaestus_tools:dragonsteel_ice",
   "ingredient": {
-    "item": "iceandfire:dragonsteel_lightning_ingot"
+    "item": "iceandfire:dragonsteel_ice_ingot"
   },
-  "color": 11245225,
+  "color": 7380911,
   "head_stats": {
     "durability": 2500,
     "mining_speed": 10.0,
