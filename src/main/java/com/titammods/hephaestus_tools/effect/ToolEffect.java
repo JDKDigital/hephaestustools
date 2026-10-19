@@ -32,6 +32,10 @@ public interface ToolEffect {
         return amount;
     }
 
+    default float brokenEfficiency(int level) {
+        return 0f;
+    }
+
     default int modifyRepair(EffectContext context, int amount, int level) {
         return amount;
     }

@@ -82,8 +82,7 @@ public abstract class ModifiableItem extends Item {
 
     @Override
     public boolean canPerformAction(ItemInstance instance, ItemAbility ability) {
-        if (instance instanceof ItemStack stack
-                && (!ToolStack.isInitialized(stack) || ToolStack.isBroken(stack))) {
+        if (instance instanceof ItemStack stack && !ToolStack.isUsable(stack)) {
             return false;
         }
         if (instance instanceof ItemStack stack && ability == ItemAbilities.HOE_TILL
@@ -138,6 +137,7 @@ public abstract class ModifiableItem extends Item {
     public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, @Nullable T entity, Consumer<Item> onBroken) {
         WearCause cause = ToolDurability.takeCause();
         if (ToolStack.isInitialized(stack) && ToolStack.getProperties(stack).getStat(ToolStats.INDESTRUCTIBLE, 0f) > 0f) return 0;
+        if (ToolStack.isBroken(stack) && ToolStack.isUsable(stack)) return 0;
         int wear = super.damageItem(stack, amount, entity, onBroken);
         if (entity == null || entity.hasInfiniteMaterials() || !stack.isDamageableItem()) return wear;
         return ToolEffects.modifyWear(entity, stack, wear, cause);
@@ -156,7 +156,7 @@ public abstract class ModifiableItem extends Item {
         }
 
         ToolPropertiesData props = ToolStack.getProperties(stack);
-        float attackDamage = ToolStack.isBroken(stack) ? 0f : Math.max(0f, props.getAttackDamage());
+        float attackDamage = Math.max(0f, props.getAttackDamage()) * ToolStack.efficiency(stack);
         float attackSpeed  = props.getAttackSpeed();
 
         return ItemAttributeModifiers.builder()
@@ -174,15 +174,17 @@ public abstract class ModifiableItem extends Item {
     @Override
     public float getDestroySpeed(ItemStack stack, BlockState state) {
         if (!ToolStack.isInitialized(stack)) return 1.0f;
-        if (ToolStack.isBroken(stack)) return 0.0f;
+        float efficiency = ToolStack.efficiency(stack);
+        if (efficiency <= 0f) return 0.0f;
+        float speed = ToolStack.getMiningSpeed(stack) * efficiency;
         if (categories().contains(ToolCategory.SWORD) && state.is(Blocks.COBWEB))
-            return Math.max(15.0f, ToolStack.getMiningSpeed(stack));
-        return effectiveOn(state) ? ToolStack.getMiningSpeed(stack) : 1.0f;
+            return Math.max(15.0f, speed);
+        return effectiveOn(state) ? speed : 1.0f;
     }
 
     @Override
     public boolean isCorrectToolForDrops(ItemStack stack, BlockState state) {
-        if (!ToolStack.isInitialized(stack) || ToolStack.isBroken(stack)) return false;
+        if (!ToolStack.isUsable(stack)) return false;
         if (!effectiveOn(state)) return false;
         return ToolStack.getProperties(stack).getHarvestTier().canHarvest(state);
     }
@@ -219,7 +221,7 @@ public abstract class ModifiableItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
         ItemStack stack = ctx.getItemInHand();
-        if (!ToolStack.isInitialized(stack) || ToolStack.isBroken(stack)) return InteractionResult.PASS;
+        if (!ToolStack.isUsable(stack)) return InteractionResult.PASS;
 
         Level level = ctx.getLevel();
         BlockPos pos = ctx.getClickedPos();

@@ -65,6 +65,12 @@ public final class ToolEffects {
         return amount;
     }
 
+    public static float brokenEfficiency(ItemStack tool) {
+        float efficiency = 0f;
+        for (ActiveEffect active : collect(tool)) efficiency = Math.max(efficiency, active.effect().brokenEfficiency(active.level()));
+        return Math.min(1f, efficiency);
+    }
+
     public static int modifyRepair(LivingEntity repairer, ItemStack tool, int amount) {
         if (!ToolStack.isInitialized(tool)) return amount;
         EffectContext context = EffectContext.holding(repairer, tool, null);
