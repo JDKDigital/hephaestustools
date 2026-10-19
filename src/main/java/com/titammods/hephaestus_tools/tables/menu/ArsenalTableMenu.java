@@ -139,8 +139,17 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
     public ItemStack output() { return slots.get(5).getItem(); }
 
     public static int repairPerMaterial(ItemStack tool, LivingEntity repairer) {
-        int restored = Math.max(1, (ToolStack.getDurability(tool) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
-        return Math.max(1, ToolEffects.modifyRepair(repairer, tool, restored));
+        return Math.max(1, ToolEffects.modifyRepair(repairer, tool, baseRepairPerMaterial(tool)));
+    }
+
+    private static int baseRepairPerMaterial(ItemStack tool) {
+        return Math.max(1, (ToolStack.getDurability(tool) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
+    }
+
+    public int repairPercent() {
+        if (!isRepair()) return 100 / REPAIR_DIVISOR;
+        ItemStack tool = output();
+        return Math.round(100f / REPAIR_DIVISOR * repairPerMaterial(tool, user) / baseRepairPerMaterial(tool));
     }
 
     public boolean isRepairMaterial(ItemStack stack) {

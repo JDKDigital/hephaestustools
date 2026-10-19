@@ -522,7 +522,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             if (menu.isRepair() && !menu.input(0).isEmpty() && !(menu.input(0).getItem() instanceof ToolPartItem)) {
                 boolean ok = canRepairNow();
                 readyButton(g, bx, sy, bw, DOCK_H, ok, ok && bh, tr("repair_button"));
-                tip(bx, sy, bw, DOCK_H, tr("repair_button_hint"));
+                tip(bx, sy, bw, DOCK_H, trArgs("repair_button_hint", menu.repairPercent() + "%"));
                 return;
             }
             if (menu.isRepair() && menu.input(0).getItem() instanceof ToolPartItem) {
@@ -664,7 +664,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
                 if (h) fill(g, x, repairFillY() + 13, fw, 1, FILL_LINK);
                 hintY = repairFillY() + 20;
             }
-            wrapped(g, tr("workbench_repair_hint"), x, hintY, w, .56f, INK2, 5);
+            wrapped(g, trArgs("workbench_repair_hint", menu.repairPercent() + "%"), x, hintY, w, .56f, INK2, 5);
             return;
         }
         if (none) {
