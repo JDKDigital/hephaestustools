@@ -238,18 +238,25 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
     private int maxPageH() { return height - PAGE_TOP - HOTBAR_H - 16 - hintsH(); }
     private boolean showRight() { return menu.getActiveTab() == 0 || toolReady(); }
     private int leftPageH() { return Math.min(maxPageH(), Math.round(leftHt)); }
-    private int rightPageH() { return Math.min(maxPageH(), Math.round(rightHt)); }
+    private int rightPageH() { return Math.min(maxRightPageH(), Math.round(rightHt)); }
+    private static final int RIGHT_TOP = 12;
+    private int rightBottom() {
+        int bottom = hintsY() - 8;
+        if (Math.min(width - 12 - pageW(), cx() + HALF_GAP) < cx() + 97) bottom = Math.min(bottom, height - HOTBAR_H - 16);
+        return bottom;
+    }
+    private int maxRightPageH() { return Math.max(maxPageH(), rightBottom() - RIGHT_TOP); }
     private int pageShift() { return Math.round((1f - outBack(pagesT)) * (pageW() + 30)); }
     private static final int HALF_GAP = 150;
     private int lpX() { return Math.max(12, cx() - HALF_GAP - pageW()) - pageShift(); }
     private int rpX() { return Math.min(width - 12 - pageW(), cx() + HALF_GAP) + pageShift(); }
     private int midY() { return (height - HOTBAR_H - 8) / 2; }
     private int lTop() { return Mth.clamp(midY() - leftPageH() / 2, PAGE_TOP, Math.max(PAGE_TOP, height - HOTBAR_H - 12 - leftPageH())); }
-    private int rTop() { return Mth.clamp(midY() - rightPageH() / 2, 12, Math.max(12, height - HOTBAR_H - 16 - hintsH() - rightPageH())); }
+    private int rTop() { return Mth.clamp(midY() - rightPageH() / 2, RIGHT_TOP, Math.max(RIGHT_TOP, rightBottom() - rightPageH())); }
     private int inW() { return pageW() - 2 * PP; }
     private int lIn() { return lpX() + PP; }
     private int rIn() { return rpX() + PP; }
-    private int pBottom() { return rTop() + maxPageH() - PP; }
+    private int pBottom() { return rTop() + maxRightPageH() - PP; }
     private static final int HEAD_TEXT = 30;
     private int headSlotX() { return rIn(); }
     private int headSlotY() { return rTop() + PP; }
@@ -778,6 +785,24 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         return y + 15;
     }
 
+    private static final float PART_NAME_SCALE = .64f, PART_TRAIT_SCALE = .58f, PART_DESC_SCALE = .54f;
+    private static final int PART_ICON_H = 18, PART_GAP = 4;
+
+    private int partDescHeight(Component desc, int width, int maxLines) {
+        int lines = Math.min(maxLines, font.split(desc, (int) (width / (PART_DESC_SCALE * TEXT_BOOST))).size());
+        return Math.round(lines * (font.lineHeight + 2) * PART_DESC_SCALE * TEXT_BOOST);
+    }
+
+    private int partRowHeight(List<ToolTraits.TraitInstance> traits, int w, int maxLines) {
+        if (traits.isEmpty()) return PART_ICON_H + 2;
+        int ty = 9;
+        for (var trait : traits) {
+            ty = Math.max(ty + 8, PART_ICON_H);
+            ty += partDescHeight(Component.translatable(ToolTraits.descriptionKey(trait.id())), w, maxLines) + 2;
+        }
+        return Math.max(ty, PART_ICON_H + 2);
+    }
+
     private int drawPartsBlock(GuiGraphicsExtractor g, int x, int y, int w) {
         var materials = ToolStack.getMaterials(details);
         var parts = ToolBuildHandler.getToolParts(details.getItem());
@@ -785,41 +810,48 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         y += 3;
         heading(g, x, y, w, tr("parts_title"), null);
         y += 17 + HG;
-        int room = pBottom() - y;
-        int pitch = Mth.clamp(room / Math.max(1, parts.size()), 17, 22);
-        int lineGap = pitch < 21 ? 8 : 10;
+        List<List<ToolTraits.TraitInstance>> partTraits = new ArrayList<>();
+        for (int i = 0; i < parts.size(); i++)
+            partTraits.add(ToolTraits.ofPart(materials.get(Math.min(i, materials.size() - 1)), ToolBuildHandler.partRole(parts, i)));
+        int room = pBottom() - y, maxLines = 4;
+        while (maxLines > 1) {
+            int total = 0;
+            for (var traits : partTraits) total += partRowHeight(traits, w, maxLines) + PART_GAP;
+            if (total <= room) break;
+            maxLines--;
+        }
         for (int i = 0; i < parts.size(); i++) {
             var mat = materials.get(Math.min(i, materials.size() - 1));
-            measure(y + pitch);
+            var traits = partTraits.get(i);
+            int top = y;
             ItemStack partStack = parts.get(i) instanceof ToolPartItem tp ? tp.withMaterial(mat) : new ItemStack(parts.get(i));
             g.item(partStack, x, y + 1);
             Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
-            text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, .64f, INK);
-            var traits = ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i));
-            if (traits.size() == 1) {
-                Component tn = ToolTooltipBuilder.traitName(traits.getFirst());
-                Component td = Component.translatable(ToolTraits.descriptionKey(traits.getFirst().id()));
-                text(g, tn.copy().withColor(INK_ORANGE & 0xFFFFFF).append(Component.literal("  ")).append(td.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y + lineGap, w - 20, .52f, INK2);
-                tip(x, y - 1, w, pitch, partStack.getHoverName(), tn.copy().withStyle(ChatFormatting.GOLD), td, matName);
-            } else if (!traits.isEmpty()) {
-                MutableComponent names = Component.empty();
-                List<Component> lines = new ArrayList<>();
-                lines.add(partStack.getHoverName());
+            text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, PART_NAME_SCALE, INK);
+            List<Component> lines = new ArrayList<>();
+            lines.add(partStack.getHoverName());
+            if (traits.isEmpty()) {
+                text(g, tr("part_no_trait"), x + 20, y + 9, w - 20, PART_TRAIT_SCALE, INK3);
+                y += PART_ICON_H + 2;
+            } else {
+                int ty = y + 9, tx = x + 20, tw = w - 20;
                 for (var trait : traits) {
                     Component tn = ToolTooltipBuilder.traitName(trait);
-                    if (!names.getSiblings().isEmpty()) names.append(Component.literal(", "));
-                    names.append(tn.copy().withColor(INK_ORANGE & 0xFFFFFF));
+                    Component td = Component.translatable(ToolTraits.descriptionKey(trait.id()));
+                    text(g, tn, tx, ty, tw, PART_TRAIT_SCALE, INK_ORANGE);
+                    ty = Math.max(ty + 8, y + PART_ICON_H);
+                    ty = wrapped(g, td, x, ty, w, PART_DESC_SCALE, INK2, maxLines) + 2;
+                    tx = x;
+                    tw = w;
                     lines.add(tn.copy().withStyle(ChatFormatting.GOLD));
-                    lines.add(Component.translatable(ToolTraits.descriptionKey(trait.id())));
+                    lines.add(td);
                 }
-                lines.add(matName);
-                text(g, names, x + 20, y + lineGap, w - 20, .52f, INK2);
-                tip(x, y - 1, w, pitch, lines.toArray(Component[]::new));
-            } else {
-                text(g, tr("part_no_trait"), x + 20, y + lineGap, w - 20, .52f, INK3);
-                tip(x, y - 1, w, pitch, partStack.getHoverName(), matName);
+                y = Math.max(ty, y + PART_ICON_H + 2);
             }
-            y += pitch;
+            lines.add(matName);
+            measure(y);
+            tip(x, top - 1, w, y - top, lines.toArray(Component[]::new));
+            y += PART_GAP;
         }
         return y;
     }
