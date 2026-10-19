@@ -61,6 +61,7 @@ public final class ToolXp {
     }
 
     private static void onLevelUp(ItemStack tool, ServerPlayer p, int from, int to) {
+        ToolStack.recalculate(tool);
         p.level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5f, 1.5f);
         p.sendSystemMessage(Component.translatable("msg.hephaestus_tools.levelup",
                 tool.getHoverName(), to, Component.translatable(rankKey(to))));
