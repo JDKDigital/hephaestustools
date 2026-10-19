@@ -826,7 +826,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             int top = y;
             ItemStack partStack = parts.get(i) instanceof ToolPartItem tp ? tp.withMaterial(mat) : new ItemStack(parts.get(i));
             g.item(partStack, x, y + 1);
-            Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+            Component matName = Component.translatable(mat.translationKey());
             text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, PART_NAME_SCALE, INK);
             List<Component> lines = new ArrayList<>();
             lines.add(partStack.getHoverName());
@@ -1813,7 +1813,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
                 Component traitName = ToolTooltipBuilder.traitName(trait);
                 Component traitDesc = Component.translatable(ToolTraits.descriptionKey(trait.id()));
-                Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+                Component materialName = Component.translatable(mat.translationKey());
                 Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
                 traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
                 traitRows.add(new Component[] {traitName, traitDesc, materialName});

@@ -324,7 +324,7 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
             var mat = materials.get(i);
             for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
                 Component traitName = ToolTooltipBuilder.traitName(trait);
-                Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+                Component materialName = Component.translatable(mat.translationKey());
                 Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
                 traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
                 int traitY = (menu.getActiveTab() == 0 ? 133 : 127) + (traitDetails.size() - 1) * 7;

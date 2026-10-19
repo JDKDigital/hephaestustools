@@ -349,9 +349,7 @@ public abstract class ModifiableItem extends Item {
     }
 
     private static Component materialName(MaterialId id) {
-        Identifier rl = id.id();
-        String key = "material." + rl.getNamespace() + "." + rl.getPath();
-        return Component.translatable(key);
+        return Component.translatable(id.translationKey());
     }
 
     private static void appendTrait(ItemStack stack, Consumer<Component> tooltip) {
